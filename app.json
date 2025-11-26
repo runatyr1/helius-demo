@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "helius-live-balance",
-    "slug": "helius-live-balance",
+    "name": "helius-demo",
+    "slug": "helius-demo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

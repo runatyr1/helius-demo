@@ -43,3 +43,139 @@ export const getCurrentBalance = async (
   const balance = await connection.getBalance(publicKey);
   return balance;
 };
+
+export interface HeliusTransaction {
+  signature: string;
+  timestamp: number;
+  type: string;
+  source: string;
+  fee: number;
+  feePayer: string;
+  slot: number;
+  nativeTransfers?: Array<{
+    fromUserAccount: string;
+    toUserAccount: string;
+    amount: number;
+  }>;
+  tokenTransfers?: Array<{
+    fromUserAccount: string;
+    toUserAccount: string;
+    mint: string;
+    tokenAmount: number;
+  }>;
+  description?: string;
+}
+
+export const getTransactionsForAddress = async (
+  address: string,
+  limit: number = 10
+): Promise<HeliusTransaction[]> => {
+  const url = getHeliusHttpUrl();
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 'helius-tx-history',
+      method: 'getTransactionsForAddress',
+      params: {
+        address,
+        limit,
+      },
+    }),
+  });
+
+  const data = await response.json();
+
+  if (data.error) {
+    throw new Error(data.error.message || 'Failed to fetch transactions');
+  }
+
+  return data.result || [];
+};
+
+// Network Health Types
+export interface NetworkHealth {
+  health: string;
+}
+
+export interface EpochInfo {
+  absoluteSlot: number;
+  blockHeight: number;
+  epoch: number;
+  slotIndex: number;
+  slotsInEpoch: number;
+  transactionCount: number;
+}
+
+export interface PerformanceSample {
+  slot: number;
+  numTransactions: number;
+  numSlots: number;
+  samplePeriodSecs: number;
+}
+
+export interface SolanaVersion {
+  'solana-core': string;
+  'feature-set': number;
+}
+
+// Network Health API Methods
+export const getNetworkHealth = async (): Promise<string> => {
+  const connection = createConnection();
+  const response = await fetch(connection.rpcEndpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'getHealth',
+    }),
+  });
+  const data = await response.json();
+  return data.result || 'ok';
+};
+
+export const getBlockHeight = async (): Promise<number> => {
+  const connection = createConnection();
+  return await connection.getBlockHeight();
+};
+
+export const getEpochInfo = async (): Promise<EpochInfo> => {
+  const connection = createConnection();
+  return await connection.getEpochInfo();
+};
+
+export const getRecentPerformanceSamples = async (limit: number = 10): Promise<PerformanceSample[]> => {
+  const connection = createConnection();
+  const response = await fetch(connection.rpcEndpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'getRecentPerformanceSamples',
+      params: [limit],
+    }),
+  });
+  const data = await response.json();
+  return data.result || [];
+};
+
+export const getSolanaVersion = async (): Promise<SolanaVersion> => {
+  const connection = createConnection();
+  const response = await fetch(connection.rpcEndpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'getVersion',
+    }),
+  });
+  const data = await response.json();
+  return data.result || { 'solana-core': 'unknown', 'feature-set': 0 };
+};

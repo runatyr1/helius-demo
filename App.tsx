@@ -3,6 +3,8 @@ import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView } from 'react-na
 import { StatusBar } from 'expo-status-bar';
 import { Drawer } from 'react-native-drawer-layout';
 import LiveBalanceScreen from './src/screens/LiveBalanceScreen';
+import TransactionHistoryScreen from './src/screens/TransactionHistoryScreen';
+import NetworkHealthScreen from './src/screens/NetworkHealthScreen';
 
 export default function App() {
   const [open, setOpen] = useState(false);
@@ -35,6 +37,36 @@ export default function App() {
             📊 Live Balance
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.menuItem,
+            selectedScreen === 'TransactionHistory' && styles.menuItemActive
+          ]}
+          onPress={() => navigateTo('TransactionHistory')}
+        >
+          <Text style={[
+            styles.menuItemText,
+            selectedScreen === 'TransactionHistory' && styles.menuItemTextActive
+          ]}>
+            📜 Transaction History (Paid)
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.menuItem,
+            selectedScreen === 'NetworkHealth' && styles.menuItemActive
+          ]}
+          onPress={() => navigateTo('NetworkHealth')}
+        >
+          <Text style={[
+            styles.menuItemText,
+            selectedScreen === 'NetworkHealth' && styles.menuItemTextActive
+          ]}>
+            🌐 Network Health
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.drawerFooter}>
@@ -47,6 +79,10 @@ export default function App() {
     switch (selectedScreen) {
       case 'LiveBalance':
         return <LiveBalanceScreen />;
+      case 'TransactionHistory':
+        return <TransactionHistoryScreen />;
+      case 'NetworkHealth':
+        return <NetworkHealthScreen />;
       default:
         return <LiveBalanceScreen />;
     }
@@ -67,7 +103,10 @@ export default function App() {
             <Text style={styles.menuIcon}>☰</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
-            {selectedScreen === 'LiveBalance' ? 'Live Balance' : selectedScreen}
+            {selectedScreen === 'LiveBalance' ? 'Live Balance' :
+             selectedScreen === 'TransactionHistory' ? 'Transaction History' :
+             selectedScreen === 'NetworkHealth' ? 'Network Health' :
+             selectedScreen}
           </Text>
         </View>
 

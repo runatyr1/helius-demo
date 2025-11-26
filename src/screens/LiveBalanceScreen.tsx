@@ -26,18 +26,42 @@ export default function LiveBalanceScreen() {
   const [balanceUpdates, setBalanceUpdates] = useState<BalanceUpdate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
 
   const subscriptionIdRef = useRef<number | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const currentAddressRef = useRef<string>('');
+  const isIntentionalCloseRef = useRef(false);
 
   useEffect(() => {
     return () => {
       // Cleanup on unmount
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
+      cleanupConnection();
     };
   }, []);
+
+  const cleanupConnection = () => {
+    isIntentionalCloseRef.current = true;
+
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current);
+      pingIntervalRef.current = null;
+    }
+
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    subscriptionIdRef.current = null;
+  };
 
   const handleStartStreaming = async () => {
     if (!address.trim()) {
@@ -52,6 +76,9 @@ export default function LiveBalanceScreen() {
 
     setIsLoading(true);
     setBalanceUpdates([]);
+    setReconnectAttempts(0);
+    isIntentionalCloseRef.current = false;
+    currentAddressRef.current = address;
 
     try {
       // Get initial balance via HTTP
@@ -79,24 +106,78 @@ export default function LiveBalanceScreen() {
   };
 
   const handleStopStreaming = () => {
+    isIntentionalCloseRef.current = true;
+
     if (wsRef.current && subscriptionIdRef.current !== null) {
       // Unsubscribe
-      wsRef.current.send(
-        JSON.stringify({
-          jsonrpc: '2.0',
-          id: 2,
-          method: 'accountUnsubscribe',
-          params: [subscriptionIdRef.current],
-        })
-      );
-
-      wsRef.current.close();
-      wsRef.current = null;
-      subscriptionIdRef.current = null;
+      try {
+        wsRef.current.send(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'accountUnsubscribe',
+            params: [subscriptionIdRef.current],
+          })
+        );
+      } catch (error) {
+        console.error('Error unsubscribing:', error);
+      }
     }
 
+    cleanupConnection();
     setIsStreaming(false);
     setConnectionStatus('disconnected');
+    setReconnectAttempts(0);
+  };
+
+  const startPingInterval = () => {
+    // Clear any existing interval
+    if (pingIntervalRef.current) {
+      clearInterval(pingIntervalRef.current);
+    }
+
+    // Send ping every 60 seconds (Helius recommendation)
+    pingIntervalRef.current = setInterval(() => {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        try {
+          // Send a getHealth request as keepalive
+          wsRef.current.send(
+            JSON.stringify({
+              jsonrpc: '2.0',
+              id: 999,
+              method: 'getHealth',
+            })
+          );
+          console.log('Keepalive ping sent');
+        } catch (error) {
+          console.error('Error sending keepalive:', error);
+        }
+      }
+    }, 60000); // 60 seconds
+  };
+
+  const attemptReconnect = () => {
+    if (isIntentionalCloseRef.current) {
+      console.log('Intentional close, not reconnecting');
+      return;
+    }
+
+    // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s (max)
+    const backoffMs = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+
+    console.log(`Reconnecting in ${backoffMs}ms (attempt ${reconnectAttempts + 1})`);
+
+    setConnectionStatus('connecting');
+    setReconnectAttempts((prev) => prev + 1);
+
+    reconnectTimeoutRef.current = setTimeout(() => {
+      if (currentAddressRef.current && !isIntentionalCloseRef.current) {
+        console.log('Attempting reconnection...');
+        subscribeToAccountUpdates(currentAddressRef.current).catch((error) => {
+          console.error('Reconnection failed:', error);
+        });
+      }
+    }, backoffMs);
   };
 
   const subscribeToAccountUpdates = (walletAddress: string): Promise<void> => {
@@ -110,6 +191,10 @@ export default function LiveBalanceScreen() {
         ws.onopen = () => {
           console.log('WebSocket connected');
           setConnectionStatus('connected');
+          setReconnectAttempts(0); // Reset on successful connection
+
+          // Start keepalive pings
+          startPingInterval();
 
           // Subscribe to account updates
           const publicKey = new PublicKey(walletAddress);
@@ -141,6 +226,11 @@ export default function LiveBalanceScreen() {
             return;
           }
 
+          // Ignore keepalive responses
+          if (data.id === 999) {
+            return;
+          }
+
           // Handle account updates
           if (data.method === 'accountNotification') {
             const accountInfo = data.params.result.value;
@@ -169,16 +259,27 @@ export default function LiveBalanceScreen() {
         ws.onerror = (error) => {
           console.error('WebSocket error:', error);
           setConnectionStatus('disconnected');
-          reject(new Error('WebSocket connection failed'));
         };
 
-        ws.onclose = () => {
-          console.log('WebSocket disconnected');
+        ws.onclose = (event) => {
+          console.log('WebSocket disconnected', { code: event.code, reason: event.reason });
           setConnectionStatus('disconnected');
+
+          // Clear ping interval
+          if (pingIntervalRef.current) {
+            clearInterval(pingIntervalRef.current);
+            pingIntervalRef.current = null;
+          }
+
+          // Attempt reconnection if not intentional
+          if (!isIntentionalCloseRef.current) {
+            attemptReconnect();
+          }
         };
 
         setConnectionStatus('connecting');
       } catch (error) {
+        console.error('Error creating WebSocket:', error);
         reject(error);
       }
     });
@@ -198,9 +299,9 @@ export default function LiveBalanceScreen() {
   const getStatusText = () => {
     switch (connectionStatus) {
       case 'connected':
-        return 'Connected';
+        return reconnectAttempts > 0 ? `Connected (recovered from ${reconnectAttempts} attempts)` : 'Connected';
       case 'connecting':
-        return 'Connecting...';
+        return reconnectAttempts > 0 ? `Reconnecting (attempt ${reconnectAttempts})...` : 'Connecting...';
       case 'disconnected':
         return 'Disconnected';
     }
