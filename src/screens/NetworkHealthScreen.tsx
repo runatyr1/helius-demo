@@ -224,7 +224,7 @@ export default function NetworkHealthScreen() {
               </Text>
             </View>
             <View style={styles.stat}>
-              <Text style={styles.statLabel}>Samples</Text>
+              <Text style={styles.statLabel}>Samplesss</Text>
               <Text style={styles.statValue}>{performanceSamples.length}</Text>
             </View>
           </View>
