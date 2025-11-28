@@ -316,7 +316,7 @@ export default function LiveBalanceScreen() {
           value={address}
           onChangeText={setAddress}
           placeholder="Enter wallet address (e.g., 7xKXtg...)"
-          placeholderTextColor="#999"
+          placeholderTextColor="#666"
           autoCapitalize="none"
           autoCorrect={false}
           editable={!isStreaming}
@@ -371,32 +371,32 @@ export default function LiveBalanceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1a1a1a',
   },
   inputSection: {
-    backgroundColor: '#fff',
+    backgroundColor: '#2d2d2d',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#404040',
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: '#e0e0e0',
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#404040',
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
-    color: '#333',
-    backgroundColor: '#f9f9f9',
+    color: '#f5f5f5',
+    backgroundColor: '#1a1a1a',
     marginBottom: 12,
   },
   button: {
-    backgroundColor: '#6366f1',
+    backgroundColor: '#4f46e5',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -426,33 +426,33 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 14,
-    color: '#666',
+    color: '#b0b0b0',
   },
   balanceCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#2d2d2d',
     margin: 16,
     padding: 20,
     borderRadius: 12,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
   balanceLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#b0b0b0',
     marginBottom: 8,
   },
   balanceAmount: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#6366f1',
+    color: '#818cf8',
     marginBottom: 4,
   },
   balanceLamports: {
     fontSize: 12,
-    color: '#999',
+    color: '#808080',
   },
 });

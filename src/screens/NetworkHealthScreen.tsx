@@ -237,7 +237,7 @@ export default function NetworkHealthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1a1a1a',
   },
   scrollContent: {
     padding: 16,
@@ -246,15 +246,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1a1a1a',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: '#b0b0b0',
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: '#2d2d2d',
     padding: 20,
     borderRadius: 12,
     marginBottom: 16,
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#f5f5f5',
   },
   statusBadge: {
     flexDirection: 'row',
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#fff',
+    backgroundColor: '#2d2d2d',
     marginRight: 6,
   },
   statusText: {
@@ -296,16 +296,16 @@ const styles = StyleSheet.create({
   },
   lastUpdate: {
     fontSize: 12,
-    color: '#999',
+    color: '#808080',
     marginTop: 4,
   },
   autoRefresh: {
     fontSize: 11,
-    color: '#bbb',
+    color: '#666',
     marginTop: 2,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: '#2d2d2d',
     padding: 20,
     borderRadius: 12,
     marginBottom: 16,
@@ -318,23 +318,23 @@ const styles = StyleSheet.create({
   cardLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: '#b0b0b0',
     marginBottom: 8,
   },
   cardValueLarge: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#6366f1',
+    color: '#818cf8',
   },
   cardValue: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#f5f5f5',
     marginBottom: 4,
   },
   cardSubtext: {
     fontSize: 12,
-    color: '#999',
+    color: '#808080',
   },
   epochInfo: {
     marginTop: 8,
@@ -348,12 +348,12 @@ const styles = StyleSheet.create({
   epochText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#f5f5f5',
   },
   epochPercentage: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#6366f1',
+    color: '#818cf8',
   },
   progressBar: {
     height: 8,
@@ -376,17 +376,17 @@ const styles = StyleSheet.create({
   },
   epochDetailLabel: {
     fontSize: 12,
-    color: '#999',
+    color: '#808080',
     marginBottom: 4,
   },
   epochDetailValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: '#f5f5f5',
   },
   chartSubtext: {
     fontSize: 12,
-    color: '#999',
+    color: '#808080',
     marginBottom: 16,
   },
   chart: {
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     fontSize: 9,
-    color: '#666',
+    color: '#b0b0b0',
     marginTop: 4,
     textAlign: 'center',
   },
@@ -433,12 +433,12 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: '#999',
+    color: '#808080',
     marginBottom: 4,
   },
   statValue: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#6366f1',
+    color: '#818cf8',
   },
 });

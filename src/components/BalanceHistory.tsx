@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#e0e0e0',
     marginBottom: 12,
     paddingHorizontal: 16,
   },
@@ -76,16 +76,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   updateItem: {
-    backgroundColor: '#fff',
+    backgroundColor: '#2d2d2d',
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 8,
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#6366f1',
+    borderLeftColor: '#818cf8',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 1,
   },
@@ -98,11 +98,11 @@ const styles = StyleSheet.create({
   updateTime: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6366f1',
+    color: '#a5b4fc',
   },
   updateSlot: {
     fontSize: 12,
-    color: '#999',
+    color: '#808080',
   },
   balanceRow: {
     flexDirection: 'row',
@@ -111,17 +111,17 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#b0b0b0',
     marginRight: 8,
   },
   balanceValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#333',
+    color: '#f5f5f5',
   },
   lamports: {
     fontSize: 12,
-    color: '#999',
+    color: '#808080',
   },
   emptyContainer: {
     flex: 1,
@@ -132,12 +132,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#999',
+    color: '#808080',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#bbb',
+    color: '#666',
     textAlign: 'center',
   },
 });

@@ -106,7 +106,7 @@ export default function TransactionHistoryScreen() {
     return {
       type: tx.type || 'Transaction',
       amount: `Fee: ${lamportsToSol(tx.fee).toFixed(6)} SOL`,
-      color: '#6366f1',
+      color: '#818cf8',
     };
   };
 
@@ -151,7 +151,7 @@ export default function TransactionHistoryScreen() {
           value={address}
           onChangeText={setAddress}
           placeholder="Enter wallet address"
-          placeholderTextColor="#999"
+          placeholderTextColor="#666"
           autoCapitalize="none"
           autoCorrect={false}
         />
@@ -219,28 +219,28 @@ export default function TransactionHistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1a1a1a',
   },
   inputSection: {
-    backgroundColor: '#fff',
+    backgroundColor: '#2d2d2d',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#404040',
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: '#f5f5f5',
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#404040',
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
-    color: '#333',
-    backgroundColor: '#f9f9f9',
+    color: '#f5f5f5',
+    backgroundColor: '#1a1a1a',
     marginBottom: 12,
   },
   button: {
@@ -275,12 +275,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#f5f5f5',
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#999',
+    color: '#808080',
     textAlign: 'center',
     paddingHorizontal: 32,
   },
@@ -293,15 +293,15 @@ const styles = StyleSheet.create({
   listTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#f5f5f5',
     marginBottom: 4,
   },
   listSubtitle: {
     fontSize: 12,
-    color: '#999',
+    color: '#808080',
   },
   txCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#2d2d2d',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
   },
   txTime: {
     fontSize: 12,
-    color: '#999',
+    color: '#808080',
   },
   txAmount: {
     marginBottom: 8,
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   },
   txDescription: {
     fontSize: 14,
-    color: '#666',
+    color: '#b0b0b0',
     marginBottom: 8,
   },
   txFooter: {
@@ -353,12 +353,12 @@ const styles = StyleSheet.create({
   },
   txSignature: {
     fontSize: 11,
-    color: '#999',
+    color: '#808080',
     fontFamily: 'monospace',
     marginBottom: 4,
   },
   txSlot: {
     fontSize: 11,
-    color: '#999',
+    color: '#808080',
   },
 });

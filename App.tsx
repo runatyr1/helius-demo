@@ -114,7 +114,7 @@ export default function App() {
           {renderScreen()}
         </View>
 
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
       </SafeAreaView>
     </Drawer>
   );
@@ -123,19 +123,19 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#1a1a1a',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#2d2d2d',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#404040',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -145,25 +145,25 @@ const styles = StyleSheet.create({
   },
   menuIcon: {
     fontSize: 24,
-    color: '#333',
+    color: '#e0e0e0',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
+    color: '#f5f5f5',
   },
   content: {
     flex: 1,
   },
   drawer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#2d2d2d',
     width: 280,
   },
   drawerContainer: {
     flex: 1,
   },
   drawerHeader: {
-    backgroundColor: '#6366f1',
+    backgroundColor: '#4f46e5',
     padding: 24,
     paddingTop: 40,
   },
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   },
   drawerSubtitle: {
     fontSize: 14,
-    color: '#e0e7ff',
+    color: '#c7d2fe',
   },
   drawerMenu: {
     flex: 1,
@@ -188,25 +188,25 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
   },
   menuItemActive: {
-    backgroundColor: '#f0f0f0',
-    borderLeftColor: '#6366f1',
+    backgroundColor: '#3d3d3d',
+    borderLeftColor: '#818cf8',
   },
   menuItemText: {
     fontSize: 16,
-    color: '#666',
+    color: '#b0b0b0',
   },
   menuItemTextActive: {
-    color: '#6366f1',
+    color: '#a5b4fc',
     fontWeight: '600',
   },
   drawerFooter: {
     padding: 24,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: '#404040',
   },
   footerText: {
     fontSize: 12,
-    color: '#999',
+    color: '#808080',
     textAlign: 'center',
   },
 });
