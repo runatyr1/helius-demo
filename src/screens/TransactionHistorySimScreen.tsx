@@ -32,10 +32,25 @@ export default function TransactionHistorySimScreen() {
   const lastSignatureRef = useRef<string | null>(null);
   const seenSignatures = useRef<Set<string>>(new Set());
 
-  const fetchTransactions = async (isManualRefresh = false) => {
-    console.log(`[TransactionSim] fetchTransactions called - isPaused: ${isPaused}, isMonitoring: ${isMonitoring}, isManualRefresh: ${isManualRefresh}`);
+  // Use refs to avoid closure issues in interval callback
+  const isPausedRef = useRef(isPaused);
+  const isMonitoringRef = useRef(isMonitoring);
 
-    if ((isPaused || !isMonitoring) && !isManualRefresh) {
+  // Keep refs in sync with state
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+    console.log(`[TransactionSim] isPausedRef updated to: ${isPaused}`);
+  }, [isPaused]);
+
+  useEffect(() => {
+    isMonitoringRef.current = isMonitoring;
+    console.log(`[TransactionSim] isMonitoringRef updated to: ${isMonitoring}`);
+  }, [isMonitoring]);
+
+  const fetchTransactions = async (isManualRefresh = false) => {
+    console.log(`[TransactionSim] fetchTransactions called - isPaused: ${isPaused}, isMonitoring: ${isMonitoring}, isPausedRef: ${isPausedRef.current}, isMonitoringRef: ${isMonitoringRef.current}, isManualRefresh: ${isManualRefresh}`);
+
+    if ((isPausedRef.current || !isMonitoringRef.current) && !isManualRefresh) {
       console.log('[TransactionSim] Fetch skipped - paused or not monitoring');
       return;
     }
@@ -102,6 +117,7 @@ export default function TransactionHistorySimScreen() {
   const startAutoRefresh = (forceInitialFetch = false) => {
     console.log(`[TransactionSim] Starting auto-refresh with interval: ${REFRESH_INTERVAL}ms`);
     setIsPaused(false);
+    isPausedRef.current = false; // Update ref synchronously
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
@@ -119,6 +135,7 @@ export default function TransactionHistorySimScreen() {
 
   const stopAutoRefresh = () => {
     setIsPaused(true);
+    isPausedRef.current = true; // Update ref synchronously
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -155,6 +172,7 @@ export default function TransactionHistorySimScreen() {
   const stopMonitoring = () => {
     console.log(`[TransactionSim] Stopping monitoring - captured ${transactions.length} transactions`);
     setIsMonitoring(false);
+    isMonitoringRef.current = false; // Update ref synchronously
     stopAutoRefresh();
     Alert.alert(
       'Monitoring Stopped',
@@ -171,6 +189,7 @@ export default function TransactionHistorySimScreen() {
     setTotalFetched(0);
     lastSignatureRef.current = null;
     setIsMonitoring(true);
+    isMonitoringRef.current = true; // Update ref synchronously
     startAutoRefresh(true); // Force initial fetch to bypass state race condition
   };
 
