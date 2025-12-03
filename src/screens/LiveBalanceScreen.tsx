@@ -311,6 +311,9 @@ export default function LiveBalanceScreen() {
     <View style={styles.container}>
       <View style={styles.inputSection}>
         <Text style={styles.label}>Solana Wallet Address</Text>
+        <Text style={styles.description}>
+          Demonstrates fast WebSocket connectivity with real-time balance updates
+        </Text>
         <TextInput
           style={styles.input}
           value={address}
