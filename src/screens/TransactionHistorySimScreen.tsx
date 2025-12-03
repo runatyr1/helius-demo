@@ -8,6 +8,7 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  Animated,
 } from 'react-native';
 import {
   getSimulatedTransactions,
@@ -15,7 +16,7 @@ import {
   lamportsToSol,
 } from '../services/helius';
 
-const REFRESH_INTERVAL = 5000; // 5 seconds
+const REFRESH_INTERVAL = 2000; // 2 seconds
 const BATCH_SIZE = 100; // Fetch 100 transactions at a time
 
 export default function TransactionHistorySimScreen() {
@@ -48,6 +49,15 @@ export default function TransactionHistorySimScreen() {
         );
 
         if (newTransactions.length > 0) {
+          // Log new transactions to console
+          console.log(`[TransactionSim] Found ${newTransactions.length} new transactions:`);
+          newTransactions.forEach((tx, idx) => {
+            console.log(
+              `  ${idx + 1}. ${tx.signature.slice(0, 12)}...${tx.signature.slice(-12)} ` +
+              `(Slot: ${tx.slot.toLocaleString()}, Fee: ${lamportsToSol(tx.fee).toFixed(6)} SOL, Success: ${tx.success})`
+            );
+          });
+
           // Add new signatures to the set
           newTransactions.forEach((tx) => {
             seenSignatures.current.add(tx.signature);
@@ -76,14 +86,14 @@ export default function TransactionHistorySimScreen() {
     }
   };
 
-  const startAutoRefresh = () => {
+  const startAutoRefresh = (forceInitialFetch = false) => {
     setIsPaused(false);
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
 
-    // Fetch immediately
-    fetchTransactions();
+    // Fetch immediately (force if restarting)
+    fetchTransactions(forceInitialFetch);
 
     // Then fetch every REFRESH_INTERVAL
     intervalRef.current = setInterval(() => {
@@ -127,6 +137,7 @@ export default function TransactionHistorySimScreen() {
   };
 
   const stopMonitoring = () => {
+    console.log(`[TransactionSim] Stopping monitoring - captured ${transactions.length} transactions`);
     setIsMonitoring(false);
     stopAutoRefresh();
     Alert.alert(
@@ -137,28 +148,31 @@ export default function TransactionHistorySimScreen() {
   };
 
   const restartMonitoring = () => {
+    console.log('[TransactionSim] Restarting monitoring - clearing all data');
     // Clear accumulated transactions and restart
     setTransactions([]);
     seenSignatures.current.clear();
     setTotalFetched(0);
     lastSignatureRef.current = null;
     setIsMonitoring(true);
-    startAutoRefresh();
+    startAutoRefresh(true); // Force initial fetch to bypass state race condition
   };
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleString('en-US', {
+    const ms = date.getMilliseconds().toString().padStart(3, '0');
+    const timeStr = date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
     });
+    return `${timeStr}.${ms}`;
   };
 
   const formatSignature = (sig: string) => {
-    return `${sig.slice(0, 8)}...${sig.slice(-8)}`;
+    return `${sig.slice(0, 12)}...${sig.slice(-12)}`;
   };
 
   const formatBlockTime = (blockTime: number) => {
@@ -171,36 +185,70 @@ export default function TransactionHistorySimScreen() {
   };
 
   const renderTransaction = (tx: SimulatedTransaction, index: number) => {
+    // Animation for new transactions (first 10 are considered "new")
+    const isNew = index < 10;
+    const scaleAnim = useRef(new Animated.Value(isNew ? 0 : 1)).current;
+    const opacityAnim = useRef(new Animated.Value(isNew ? 0 : 1)).current;
+
+    useEffect(() => {
+      if (isNew) {
+        Animated.parallel([
+          Animated.spring(scaleAnim, {
+            toValue: 1,
+            friction: 8,
+            tension: 40,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacityAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }
+    }, []);
+
     return (
-      <View key={`${tx.signature}-${index}`} style={styles.txCard}>
+      <Animated.View
+        key={`${tx.signature}-${index}`}
+        style={[
+          styles.txCard,
+          {
+            transform: [{ scale: scaleAnim }],
+            opacity: opacityAnim,
+          },
+        ]}
+      >
         <View style={styles.txHeader}>
           <View style={[
             styles.txBadge,
             { backgroundColor: tx.success ? '#10b981' : '#ef4444' }
           ]}>
             <Text style={styles.txBadgeText}>
-              {tx.success ? 'Success' : 'Failed'}
+              {tx.success ? '✓' : '✗'}
             </Text>
           </View>
           <Text style={styles.txTime}>{formatTimestamp(tx.timestamp)}</Text>
         </View>
 
-        <View style={styles.txDetails}>
-          <Text style={styles.txAmount}>
-            Fee: {lamportsToSol(tx.fee).toFixed(6)} SOL
+        {/* Signature as primary element */}
+        <View style={styles.txSignatureMain}>
+          <Text style={styles.txSignatureText}>
+            {formatSignature(tx.signature)}
           </Text>
         </View>
 
+        {/* Metadata in smaller text */}
         <View style={styles.txMeta}>
-          <Text style={styles.txSignature}>
-            Sig: {formatSignature(tx.signature)}
+          <Text style={styles.txMetaItem}>
+            Fee: {lamportsToSol(tx.fee).toFixed(6)} SOL
           </Text>
-          <Text style={styles.txSlot}>Slot: {tx.slot.toLocaleString()}</Text>
-          <Text style={styles.txAccounts}>
-            {tx.data.accounts.length} accounts, {tx.data.instructions.length} instructions
+          <Text style={styles.txMetaItem}>Slot: {tx.slot.toLocaleString()}</Text>
+          <Text style={styles.txMetaItem}>
+            {tx.data.accounts.length} accts • {tx.data.instructions.length} instr
           </Text>
         </View>
-      </View>
+      </Animated.View>
     );
   };
 
@@ -302,7 +350,7 @@ export default function TransactionHistorySimScreen() {
               </Text>
               <Text style={styles.listSubtitle}>
                 {isMonitoring
-                  ? 'New transactions appear at top • Auto-refresh every 5s'
+                  ? 'New transactions appear at top • Auto-refresh every 2s'
                   : 'Scroll through captured transactions • Pull down to restart'}
               </Text>
             </View>
@@ -481,31 +529,28 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#808080',
   },
-  txDetails: {
-    marginBottom: 8,
+  txSignatureMain: {
+    marginBottom: 10,
+    paddingVertical: 8,
   },
-  txAmount: {
-    fontSize: 16,
+  txSignatureText: {
+    fontSize: 18,
     fontWeight: '600',
     color: '#a5b4fc',
+    fontFamily: 'monospace',
+    letterSpacing: 0.5,
   },
   txMeta: {
     borderTopWidth: 1,
     borderTopColor: '#404040',
     paddingTop: 8,
-    gap: 3,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  txSignature: {
+  txMetaItem: {
     fontSize: 10,
     color: '#808080',
-    fontFamily: 'monospace',
-  },
-  txSlot: {
-    fontSize: 10,
-    color: '#808080',
-  },
-  txAccounts: {
-    fontSize: 10,
-    color: '#808080',
+    marginRight: 8,
   },
 });
