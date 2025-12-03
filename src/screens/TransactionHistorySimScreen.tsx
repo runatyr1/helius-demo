@@ -184,74 +184,7 @@ export default function TransactionHistorySimScreen() {
     });
   };
 
-  const renderTransaction = (tx: SimulatedTransaction, index: number) => {
-    // Animation for new transactions (first 10 are considered "new")
-    const isNew = index < 10;
-    const scaleAnim = useRef(new Animated.Value(isNew ? 0 : 1)).current;
-    const opacityAnim = useRef(new Animated.Value(isNew ? 0 : 1)).current;
-
-    useEffect(() => {
-      if (isNew) {
-        Animated.parallel([
-          Animated.spring(scaleAnim, {
-            toValue: 1,
-            friction: 8,
-            tension: 40,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacityAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      }
-    }, []);
-
-    return (
-      <Animated.View
-        key={`${tx.signature}-${index}`}
-        style={[
-          styles.txCard,
-          {
-            transform: [{ scale: scaleAnim }],
-            opacity: opacityAnim,
-          },
-        ]}
-      >
-        <View style={styles.txHeader}>
-          <View style={[
-            styles.txBadge,
-            { backgroundColor: tx.success ? '#10b981' : '#ef4444' }
-          ]}>
-            <Text style={styles.txBadgeText}>
-              {tx.success ? '✓' : '✗'}
-            </Text>
-          </View>
-          <Text style={styles.txTime}>{formatTimestamp(tx.timestamp)}</Text>
-        </View>
-
-        {/* Signature as primary element */}
-        <View style={styles.txSignatureMain}>
-          <Text style={styles.txSignatureText}>
-            {formatSignature(tx.signature)}
-          </Text>
-        </View>
-
-        {/* Metadata in smaller text */}
-        <View style={styles.txMeta}>
-          <Text style={styles.txMetaItem}>
-            Fee: {lamportsToSol(tx.fee).toFixed(6)} SOL
-          </Text>
-          <Text style={styles.txMetaItem}>Slot: {tx.slot.toLocaleString()}</Text>
-          <Text style={styles.txMetaItem}>
-            {tx.data.accounts.length} accts • {tx.data.instructions.length} instr
-          </Text>
-        </View>
-      </Animated.View>
-    );
-  };
-
+  // Early returns for loading and error states
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
@@ -354,13 +287,96 @@ export default function TransactionHistorySimScreen() {
                   : 'Scroll through captured transactions • Pull down to restart'}
               </Text>
             </View>
-            {transactions.map(renderTransaction)}
+            {transactions.map((tx, index) => (
+              <TransactionCard
+                key={`${tx.signature}-${index}`}
+                tx={tx}
+                index={index}
+                formatTimestamp={formatTimestamp}
+                formatSignature={formatSignature}
+                lamportsToSol={lamportsToSol}
+              />
+            ))}
           </View>
         )}
       </ScrollView>
     </View>
   );
 }
+
+// Separate component for transaction card with animations
+const TransactionCard = React.memo(({ tx, index, formatTimestamp, formatSignature, lamportsToSol }: {
+  tx: SimulatedTransaction;
+  index: number;
+  formatTimestamp: (timestamp: string) => string;
+  formatSignature: (sig: string) => string;
+  lamportsToSol: (lamports: number) => number;
+}) => {
+  // Animation for new transactions (first 10 are considered "new")
+  const isNew = index < 10;
+  const scaleAnim = useRef(new Animated.Value(isNew ? 0 : 1)).current;
+  const opacityAnim = useRef(new Animated.Value(isNew ? 0 : 1)).current;
+
+  useEffect(() => {
+    if (isNew) {
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.txCard,
+        {
+          transform: [{ scale: scaleAnim }],
+          opacity: opacityAnim,
+        },
+      ]}
+    >
+      <View style={styles.txHeader}>
+        <View style={[
+          styles.txBadge,
+          { backgroundColor: tx.success ? '#10b981' : '#ef4444' }
+        ]}>
+          <Text style={styles.txBadgeText}>
+            {tx.success ? '✓' : '✗'}
+          </Text>
+        </View>
+        <Text style={styles.txTime}>{formatTimestamp(tx.timestamp)}</Text>
+      </View>
+
+      {/* Signature as primary element */}
+      <View style={styles.txSignatureMain}>
+        <Text style={styles.txSignatureText}>
+          {formatSignature(tx.signature)}
+        </Text>
+      </View>
+
+      {/* Metadata in smaller text */}
+      <View style={styles.txMeta}>
+        <Text style={styles.txMetaItem}>
+          Fee: {lamportsToSol(tx.fee).toFixed(6)} SOL
+        </Text>
+        <Text style={styles.txMetaItem}>Slot: {tx.slot.toLocaleString()}</Text>
+        <Text style={styles.txMetaItem}>
+          {tx.data.accounts.length} accts • {tx.data.instructions.length} instr
+        </Text>
+      </View>
+    </Animated.View>
+  );
+});
 
 const styles = StyleSheet.create({
   container: {
