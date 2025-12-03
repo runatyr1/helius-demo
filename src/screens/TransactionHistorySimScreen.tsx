@@ -75,15 +75,6 @@ export default function TransactionHistorySimScreen() {
         console.log(`[TransactionSim] After filtering: ${newTransactions.length} new, ${response.transactions.length - newTransactions.length} duplicates (seenSignatures size: ${seenSignatures.current.size})`);
 
         if (newTransactions.length > 0) {
-          // Log new transactions to console
-          console.log(`[TransactionSim] Found ${newTransactions.length} new transactions:`);
-          newTransactions.forEach((tx, idx) => {
-            console.log(
-              `  ${idx + 1}. ${tx.signature.slice(0, 12)}...${tx.signature.slice(-12)} ` +
-              `(Slot: ${tx.slot.toLocaleString()}, Fee: ${lamportsToSol(tx.fee).toFixed(6)} SOL, Success: ${tx.success})`
-            );
-          });
-
           // Add new signatures to the set
           newTransactions.forEach((tx) => {
             seenSignatures.current.add(tx.signature);
