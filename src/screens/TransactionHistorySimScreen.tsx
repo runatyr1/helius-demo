@@ -33,20 +33,29 @@ export default function TransactionHistorySimScreen() {
   const seenSignatures = useRef<Set<string>>(new Set());
 
   const fetchTransactions = async (isManualRefresh = false) => {
-    if ((isPaused || !isMonitoring) && !isManualRefresh) return;
+    console.log(`[TransactionSim] fetchTransactions called - isPaused: ${isPaused}, isMonitoring: ${isMonitoring}, isManualRefresh: ${isManualRefresh}`);
+
+    if ((isPaused || !isMonitoring) && !isManualRefresh) {
+      console.log('[TransactionSim] Fetch skipped - paused or not monitoring');
+      return;
+    }
 
     try {
       if (isManualRefresh) {
         setIsRefreshing(true);
       }
 
+      console.log(`[TransactionSim] Fetching ${BATCH_SIZE} transactions...`);
       const response = await getSimulatedTransactions(BATCH_SIZE, 0);
+      console.log(`[TransactionSim] Received ${response.transactions.length} transactions from API`);
 
       if (response.transactions.length > 0) {
         // Filter out transactions we've already seen
         const newTransactions = response.transactions.filter(
           (tx) => !seenSignatures.current.has(tx.signature)
         );
+
+        console.log(`[TransactionSim] After filtering: ${newTransactions.length} new, ${response.transactions.length - newTransactions.length} duplicates (seenSignatures size: ${seenSignatures.current.size})`);
 
         if (newTransactions.length > 0) {
           // Log new transactions to console
@@ -68,7 +77,11 @@ export default function TransactionHistorySimScreen() {
           setTotalFetched((prev) => prev + newTransactions.length);
           lastSignatureRef.current = newTransactions[0].signature;
           setLastUpdateTime(new Date());
+        } else {
+          console.log('[TransactionSim] No new transactions - all filtered as duplicates');
         }
+      } else {
+        console.log('[TransactionSim] API returned 0 transactions');
       }
 
       setError(null);
@@ -87,6 +100,7 @@ export default function TransactionHistorySimScreen() {
   };
 
   const startAutoRefresh = (forceInitialFetch = false) => {
+    console.log(`[TransactionSim] Starting auto-refresh with interval: ${REFRESH_INTERVAL}ms`);
     setIsPaused(false);
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -97,8 +111,10 @@ export default function TransactionHistorySimScreen() {
 
     // Then fetch every REFRESH_INTERVAL
     intervalRef.current = setInterval(() => {
+      console.log('[TransactionSim] Interval tick - calling fetchTransactions');
       fetchTransactions();
     }, REFRESH_INTERVAL);
+    console.log(`[TransactionSim] Interval created with ID: ${intervalRef.current}`);
   };
 
   const stopAutoRefresh = () => {
