@@ -388,6 +388,12 @@ const styles = StyleSheet.create({
     color: '#e0e0e0',
     marginBottom: 8,
   },
+  description: {
+    fontSize: 12,
+    color: '#a0a0a0',
+    marginBottom: 12,
+    fontStyle: 'italic',
+  },
   input: {
     borderWidth: 1,
     borderColor: '#404040',
