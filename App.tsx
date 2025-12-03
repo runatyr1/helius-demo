@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Drawer } from 'react-native-drawer-layout';
 import LiveBalanceScreen from './src/screens/LiveBalanceScreen';
 import TransactionHistoryScreen from './src/screens/TransactionHistoryScreen';
+import TransactionHistorySimScreen from './src/screens/TransactionHistorySimScreen';
 import NetworkHealthScreen from './src/screens/NetworkHealthScreen';
 
 export default function App() {
@@ -56,6 +57,21 @@ export default function App() {
         <TouchableOpacity
           style={[
             styles.menuItem,
+            selectedScreen === 'TransactionHistorySim' && styles.menuItemActive
+          ]}
+          onPress={() => navigateTo('TransactionHistorySim')}
+        >
+          <Text style={[
+            styles.menuItemText,
+            selectedScreen === 'TransactionHistorySim' && styles.menuItemTextActive
+          ]}>
+            🔄 Transaction History (Sim)
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.menuItem,
             selectedScreen === 'NetworkHealth' && styles.menuItemActive
           ]}
           onPress={() => navigateTo('NetworkHealth')}
@@ -81,6 +97,8 @@ export default function App() {
         return <LiveBalanceScreen />;
       case 'TransactionHistory':
         return <TransactionHistoryScreen />;
+      case 'TransactionHistorySim':
+        return <TransactionHistorySimScreen />;
       case 'NetworkHealth':
         return <NetworkHealthScreen />;
       default:
@@ -105,6 +123,7 @@ export default function App() {
           <Text style={styles.headerTitle}>
             {selectedScreen === 'LiveBalance' ? 'Live Balance' :
              selectedScreen === 'TransactionHistory' ? 'Transaction History' :
+             selectedScreen === 'TransactionHistorySim' ? 'Transaction History (Sim)' :
              selectedScreen === 'NetworkHealth' ? 'Network Health' :
              selectedScreen}
           </Text>

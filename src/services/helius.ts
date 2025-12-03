@@ -179,3 +179,58 @@ export const getSolanaVersion = async (): Promise<SolanaVersion> => {
   const data = await response.json();
   return data.result || { 'solana-core': 'unknown', 'feature-set': 0 };
 };
+
+// === Helius API Demo (Simulated Transactions) ===
+
+const API_DEMO_ENDPOINT = process.env.EXPO_PUBLIC_API_DEMO_ENDPOINT || '';
+const API_DEMO_KEY = process.env.EXPO_PUBLIC_API_DEMO_KEY || '';
+
+export interface SimulatedTransaction {
+  signature: string;
+  slot: number;
+  block_time: number;
+  fee: number;
+  success: boolean;
+  timestamp: string;
+  data: {
+    accounts: string[];
+    instructions: Array<{
+      program_id: string;
+      data: string;
+    }>;
+    recent_blockhash: string;
+  };
+}
+
+export interface SimulatedTransactionsResponse {
+  count: number;
+  limit: number;
+  offset: number;
+  transactions: SimulatedTransaction[];
+}
+
+export const getSimulatedTransactions = async (
+  limit: number = 100,
+  offset: number = 0
+): Promise<SimulatedTransactionsResponse> => {
+  if (!API_DEMO_ENDPOINT || !API_DEMO_KEY) {
+    throw new Error('API Demo endpoint or key not configured');
+  }
+
+  const url = `${API_DEMO_ENDPOINT}/transactions?limit=${limit}&offset=${offset}`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'x-api-key': API_DEMO_KEY,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to fetch' }));
+    throw new Error(error.error || `HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  return await response.json();
+};
