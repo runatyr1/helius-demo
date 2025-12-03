@@ -120,7 +120,7 @@ export default function NetworkHealthScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Solana Network Status</Text>
+          <Text style={styles.headerTitle}>Solana Network Status!</Text>
           <View style={[styles.statusBadge, { backgroundColor: health === 'ok' ? '#10b981' : '#ef4444' }]}>
             <View style={styles.statusDot} />
             <Text style={styles.statusText}>{health === 'ok' ? 'Healthy' : 'Degraded'}</Text>
