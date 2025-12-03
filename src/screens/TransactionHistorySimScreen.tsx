@@ -28,6 +28,8 @@ export default function TransactionHistorySimScreen() {
   const [isMonitoring, setIsMonitoring] = useState(true);
   const [totalFetched, setTotalFetched] = useState(0);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+  const [monitoringStartTime, setMonitoringStartTime] = useState<Date>(new Date());
+  const [currentRate, setCurrentRate] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastSignatureRef = useRef<string | null>(null);
   const seenSignatures = useRef<Set<string>>(new Set());
@@ -89,7 +91,14 @@ export default function TransactionHistorySimScreen() {
 
           // Prepend new transactions (newest at top)
           setTransactions((prev) => [...newTransactions, ...prev]);
-          setTotalFetched((prev) => prev + newTransactions.length);
+          setTotalFetched((prev) => {
+            const newTotal = prev + newTransactions.length;
+            // Calculate rate: total transactions / elapsed seconds
+            const elapsed = (Date.now() - monitoringStartTime.getTime()) / 1000;
+            const rate = elapsed > 0 ? newTotal / elapsed : 0;
+            setCurrentRate(rate);
+            return newTotal;
+          });
           lastSignatureRef.current = newTransactions[0].signature;
           setLastUpdateTime(new Date());
         } else {
@@ -187,6 +196,8 @@ export default function TransactionHistorySimScreen() {
     setTransactions([]);
     seenSignatures.current.clear();
     setTotalFetched(0);
+    setCurrentRate(0);
+    setMonitoringStartTime(new Date());
     lastSignatureRef.current = null;
     setIsMonitoring(true);
     isMonitoringRef.current = true; // Update ref synchronously
@@ -251,7 +262,7 @@ export default function TransactionHistorySimScreen() {
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Rate</Text>
-          <Text style={styles.statValue}>~25 tx/s</Text>
+          <Text style={styles.statValue}>{currentRate.toFixed(1)} tx/s</Text>
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Status</Text>
