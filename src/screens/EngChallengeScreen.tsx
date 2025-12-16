@@ -234,10 +234,12 @@ export default function EngChallengeScreen() {
     <View style={styles.container}>
       {/* Header with author and Grafana link */}
       <View style={styles.authorBar}>
-        <Text style={styles.authorText}>Author: Pietro</Text>
+        <TouchableOpacity onPress={() => Linking.openURL('https://www.linkedin.com/in/pietro-cloud-engineer/')}>
+          <Text style={styles.authorText}>Author: <Text style={styles.authorBold}>Pietro</Text></Text>
+        </TouchableOpacity>
         {GRAFANA_URL && (
           <TouchableOpacity onPress={openGrafana} style={styles.grafanaLink}>
-            <Text style={styles.grafanaLinkText}>📊 Live Metrics</Text>
+            <Text style={styles.grafanaLinkText}>📊 Live backend metrics</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -246,10 +248,6 @@ export default function EngChallengeScreen() {
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Total</Text>
           <Text style={styles.statValue}>{transfers.length}</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>Rate</Text>
-          <Text style={styles.statValue}>{currentRate.toFixed(1)} tx/s</Text>
         </View>
         <View style={styles.statItem}>
           <Text style={styles.statLabel}>Status</Text>
@@ -453,18 +451,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   authorBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#2d2d2d',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#404040',
+    gap: 8,
   },
   authorText: {
     fontSize: 12,
     color: '#a0a0a0',
+  },
+  authorBold: {
+    fontWeight: 'bold',
   },
   grafanaLink: {
     paddingHorizontal: 12,
