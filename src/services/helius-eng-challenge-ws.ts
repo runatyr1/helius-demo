@@ -1,6 +1,7 @@
 // Helius Engineering Challenge - Token Indexer API Client
 
 const ENG_CHALLENGE_ENDPOINT = process.env.EXPO_PUBLIC_ENG_CHALLENGE_ENDPOINT || '';
+const ENG_CHALLENGE_API_KEY = process.env.EXPO_PUBLIC_ENG_CHALLENGE_API_KEY || '';
 
 export interface TokenTransfer {
   signature: string;
@@ -31,11 +32,18 @@ export const getTokenTransfers = async (
 
   const url = `${ENG_CHALLENGE_ENDPOINT}/api/transfers?limit=${limit}&offset=${offset}`;
 
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  // Add API key if configured
+  if (ENG_CHALLENGE_API_KEY) {
+    headers['x-api-key'] = ENG_CHALLENGE_API_KEY;
+  }
+
   const response = await fetch(url, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
   });
 
   if (!response.ok) {
