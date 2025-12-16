@@ -6,10 +6,11 @@ import LiveBalanceScreen from './src/screens/LiveBalanceScreen';
 import TransactionHistoryScreen from './src/screens/TransactionHistoryScreen';
 import TransactionHistorySimScreen from './src/screens/TransactionHistorySimScreen';
 import NetworkHealthScreen from './src/screens/NetworkHealthScreen';
+import EngChallengeScreen from './src/screens/EngChallengeScreen';
 
 export default function App() {
   const [open, setOpen] = useState(false);
-  const [selectedScreen, setSelectedScreen] = useState('TransactionHistorySim');
+  const [selectedScreen, setSelectedScreen] = useState('EngChallenge');
 
   const navigateTo = (screen: string) => {
     setSelectedScreen(screen);
@@ -24,6 +25,21 @@ export default function App() {
       </View>
 
       <View style={styles.drawerMenu}>
+        <TouchableOpacity
+          style={[
+            styles.menuItem,
+            selectedScreen === 'EngChallenge' && styles.menuItemActive
+          ]}
+          onPress={() => navigateTo('EngChallenge')}
+        >
+          <Text style={[
+            styles.menuItemText,
+            selectedScreen === 'EngChallenge' && styles.menuItemTextActive
+          ]}>
+            🪙 Helius Eng Challenge
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[
             styles.menuItem,
@@ -93,6 +109,8 @@ export default function App() {
 
   const renderScreen = () => {
     switch (selectedScreen) {
+      case 'EngChallenge':
+        return <EngChallengeScreen />;
       case 'LiveBalance':
         return <LiveBalanceScreen />;
       case 'TransactionHistory':
@@ -102,7 +120,7 @@ export default function App() {
       case 'NetworkHealth':
         return <NetworkHealthScreen />;
       default:
-        return <LiveBalanceScreen />;
+        return <EngChallengeScreen />;
     }
   };
 
@@ -121,7 +139,8 @@ export default function App() {
             <Text style={styles.menuIcon}>☰</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
-            {selectedScreen === 'LiveBalance' ? 'Live Balance' :
+            {selectedScreen === 'EngChallenge' ? 'Helius Eng Challenge' :
+             selectedScreen === 'LiveBalance' ? 'Live Balance' :
              selectedScreen === 'TransactionHistory' ? 'Transaction History' :
              selectedScreen === 'TransactionHistorySim' ? 'Transaction History (Sim)' :
              selectedScreen === 'NetworkHealth' ? 'Network Health' :
