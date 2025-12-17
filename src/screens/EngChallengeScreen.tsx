@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Animated,
   Linking,
+  TextInput,
 } from 'react-native';
 import {
   getTokenTransfers,
@@ -29,6 +30,7 @@ export default function EngChallengeScreen() {
   const [isMonitoring, setIsMonitoring] = useState(true);
   const [totalFetched, setTotalFetched] = useState(0);
   const [currentRate, setCurrentRate] = useState(0);
+  const [addressFilter, setAddressFilter] = useState('');
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const seenSignatures = useRef<Set<string>>(new Set());
   const [monitoringStartTime, setMonitoringStartTime] = useState<Date>(new Date());
@@ -208,6 +210,23 @@ export default function EngChallengeScreen() {
     }
   };
 
+  // Filter transfers by address (full or partial match on from/to)
+  const filteredTransfers = addressFilter.trim()
+    ? transfers.filter(tx => {
+        const filter = addressFilter.trim().toLowerCase();
+        const from = tx.from_address.toLowerCase();
+        const to = tx.to_address.toLowerCase();
+
+        // Match full address or partial (first/last characters)
+        return from.includes(filter) ||
+               to.includes(filter) ||
+               from.startsWith(filter) ||
+               from.endsWith(filter) ||
+               to.startsWith(filter) ||
+               to.endsWith(filter);
+      })
+    : transfers;
+
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
@@ -232,16 +251,40 @@ export default function EngChallengeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header with author and Grafana link */}
+      {/* Header with search, author and Grafana link */}
       <View style={styles.authorBar}>
-        <TouchableOpacity onPress={() => Linking.openURL('https://www.linkedin.com/in/pietro-cloud-engineer/')}>
-          <Text style={styles.authorText}>Author: <Text style={styles.authorBold}>Pietro</Text></Text>
-        </TouchableOpacity>
-        {GRAFANA_URL && (
-          <TouchableOpacity onPress={openGrafana} style={styles.grafanaLink}>
-            <Text style={styles.grafanaLinkText}>📊 Live backend metrics</Text>
+        {/* Left: Search filter */}
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.compactFilterInput}
+            value={addressFilter}
+            onChangeText={setAddressFilter}
+            placeholder="🔍 Filter address..."
+            placeholderTextColor="#666"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {addressFilter.trim() && (
+            <TouchableOpacity
+              style={styles.compactClearButton}
+              onPress={() => setAddressFilter('')}
+            >
+              <Text style={styles.compactClearButtonText}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Right: Author and Grafana */}
+        <View style={styles.authorInfoContainer}>
+          <TouchableOpacity onPress={() => Linking.openURL('https://www.linkedin.com/in/pietro-cloud-engineer/')}>
+            <Text style={styles.authorText}>Author: <Text style={styles.authorBold}>Pietro</Text></Text>
           </TouchableOpacity>
-        )}
+          {GRAFANA_URL && (
+            <TouchableOpacity onPress={openGrafana} style={styles.grafanaLink}>
+              <Text style={styles.grafanaLinkText}>📊 Live backend metrics</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <View style={styles.statsBar}>
@@ -310,7 +353,8 @@ export default function EngChallengeScreen() {
           <View style={styles.txList}>
             <View style={styles.listHeader}>
               <Text style={styles.listTitle}>
-                {isMonitoring ? 'Live Token Transfers' : 'Captured Transfers'} ({transfers.length})
+                {isMonitoring ? 'Live Token Transfers' : 'Captured Transfers'}
+                {addressFilter.trim() ? ` (${filteredTransfers.length} of ${transfers.length})` : ` (${transfers.length})`}
               </Text>
               <Text style={styles.listSubtitle}>
                 {isMonitoring
@@ -318,7 +362,7 @@ export default function EngChallengeScreen() {
                   : 'Scroll through captured transfers • Pull down to restart'}
               </Text>
             </View>
-            {transfers.map((transfer, index) => (
+            {filteredTransfers.map((transfer, index) => (
               <TransferCard
                 key={`${transfer.signature}-${index}`}
                 transfer={transfer}
@@ -451,15 +495,53 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   authorBar: {
-    flexDirection: 'column',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#2d2d2d',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#404040',
-    gap: 8,
+    gap: 12,
+  },
+  searchContainer: {
+    flex: 1,
+    maxWidth: 300,
+    position: 'relative',
+  },
+  compactFilterInput: {
+    backgroundColor: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: '#404040',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 12,
+    color: '#f5f5f5',
+    fontFamily: 'monospace',
+  },
+  compactClearButton: {
+    position: 'absolute',
+    right: 6,
+    top: '50%',
+    transform: [{ translateY: -12 }],
+    backgroundColor: '#404040',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  compactClearButtonText: {
+    color: '#a0a0a0',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  authorInfoContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 6,
   },
   authorText: {
     fontSize: 12,
