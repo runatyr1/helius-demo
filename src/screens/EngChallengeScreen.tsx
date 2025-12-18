@@ -431,11 +431,14 @@ const TransferCard = React.memo(({ transfer, index, formatTimestamp, formatSigna
         <Text style={styles.txTime}>{formatTimestamp(transfer.created_at)}</Text>
       </View>
 
-      <View style={styles.txSignatureMain}>
+      <TouchableOpacity
+        onPress={() => Linking.openURL(`https://solscan.io/tx/${transfer.signature}`)}
+        style={styles.txSignatureMain}
+      >
         <Text style={styles.txSignatureText}>
-          {formatSignature(transfer.signature)}
+          {formatSignature(transfer.signature)} 🔗
         </Text>
-      </View>
+      </TouchableOpacity>
 
       <View style={styles.txTransfer}>
         <Text style={styles.txAddress}>From: {formatAddress(transfer.from_address)}</Text>
