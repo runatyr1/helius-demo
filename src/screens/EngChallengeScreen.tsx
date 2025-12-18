@@ -196,10 +196,8 @@ export default function EngChallengeScreen() {
   };
 
   const getMintSymbol = (mint: string) => {
-    if (mint === 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v') return 'USDC';
-    if (mint === 'So11111111111111111111111111111111111111112') return 'SOL';
-    if (mint === 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263') return 'BONK';
-    return mint.slice(0, 8);
+    // Hardcoded for WIF demo
+    return 'WIF';
   };
 
   const openGrafana = () => {
@@ -442,7 +440,15 @@ const TransferCard = React.memo(({ transfer, index, formatTimestamp, formatSigna
 
       <View style={styles.txTransfer}>
         <Text style={styles.txAddress}>From: {formatAddress(transfer.from_address)}</Text>
-        <Text style={styles.txAmount}>{formatAmount(transfer.amount, transfer.decimals)} {tokenSymbol}</Text>
+        <Text style={styles.txAmount}>
+          {formatAmount(transfer.amount, transfer.decimals)}{' '}
+          <TouchableOpacity
+            onPress={() => Linking.openURL('https://coinmarketcap.com/currencies/dogwifhat/')}
+            style={styles.tokenLinkInline}
+          >
+            <Text style={styles.tokenLink}>{tokenSymbol}</Text>
+          </TouchableOpacity>
+        </Text>
         <Text style={styles.txAddress}>To: {formatAddress(transfer.to_address)}</Text>
       </View>
 
@@ -732,5 +738,14 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#808080',
     marginRight: 8,
+  },
+  tokenLinkInline: {
+    display: 'inline-block' as any,
+  },
+  tokenLink: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6366f1',
+    textDecorationLine: 'underline',
   },
 });
