@@ -11,6 +11,7 @@ import EngChallengeScreen from './src/screens/EngChallengeScreen';
 export default function App() {
   const [open, setOpen] = useState(false);
   const [selectedScreen, setSelectedScreen] = useState('EngChallenge');
+  const [showInfoTooltip, setShowInfoTooltip] = useState(false);
 
   const navigateTo = (screen: string) => {
     setSelectedScreen(screen);
@@ -138,14 +139,39 @@ export default function App() {
           <TouchableOpacity onPress={() => setOpen(!open)} style={styles.menuButton}>
             <Text style={styles.menuIcon}>☰</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {selectedScreen === 'EngChallenge' ? 'Helius Eng Challenge' :
-             selectedScreen === 'LiveBalance' ? 'Live Balance' :
-             selectedScreen === 'TransactionHistory' ? 'Transaction History' :
-             selectedScreen === 'TransactionHistorySim' ? 'Transaction History (Sim)' :
-             selectedScreen === 'NetworkHealth' ? 'Network Health' :
-             selectedScreen}
-          </Text>
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>
+              {selectedScreen === 'EngChallenge' ? 'Helius Eng Challenge' :
+               selectedScreen === 'LiveBalance' ? 'Live Balance' :
+               selectedScreen === 'TransactionHistory' ? 'Transaction History' :
+               selectedScreen === 'TransactionHistorySim' ? 'Transaction History (Sim)' :
+               selectedScreen === 'NetworkHealth' ? 'Network Health' :
+               selectedScreen}
+            </Text>
+            {selectedScreen === 'EngChallenge' && (
+              <View>
+                <TouchableOpacity
+                  onPress={() => setShowInfoTooltip(!showInfoTooltip)}
+                  style={styles.infoIconButton}
+                >
+                  <Text style={styles.infoIcon}>ⓘ</Text>
+                </TouchableOpacity>
+                {showInfoTooltip && (
+                  <View style={styles.tooltip}>
+                    <Text style={styles.tooltipText}>
+                      Monitoring WIF (dog wif hat) token transactions. There are a few transactions per minute involving WIF, to confirm this works feel free to buy a little WIF and your transaction should appear here in ~3 seconds
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setShowInfoTooltip(false)}
+                      style={styles.tooltipClose}
+                    >
+                      <Text style={styles.tooltipCloseText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={styles.content}>
@@ -185,10 +211,59 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#e0e0e0',
   },
+  headerTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    position: 'relative',
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#f5f5f5',
+  },
+  infoIconButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  infoIcon: {
+    fontSize: 18,
+    color: '#6366f1',
+  },
+  tooltip: {
+    position: 'absolute',
+    top: 35,
+    right: 0,
+    backgroundColor: '#2d2d2d',
+    borderRadius: 8,
+    padding: 16,
+    width: 300,
+    maxWidth: 300,
+    borderWidth: 1,
+    borderColor: '#404040',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
+  },
+  tooltipText: {
+    fontSize: 13,
+    color: '#e0e0e0',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  tooltipClose: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    padding: 4,
+  },
+  tooltipCloseText: {
+    fontSize: 16,
+    color: '#808080',
+    fontWeight: 'bold',
   },
   content: {
     flex: 1,
