@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Modal } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Drawer } from 'react-native-drawer-layout';
 import LiveBalanceScreen from './src/screens/LiveBalanceScreen';
@@ -149,27 +149,12 @@ export default function App() {
                selectedScreen}
             </Text>
             {selectedScreen === 'EngChallenge' && (
-              <View style={styles.infoTooltipWrapper}>
-                <TouchableOpacity
-                  onPress={() => setShowInfoTooltip(!showInfoTooltip)}
-                  style={styles.infoIconButton}
-                >
-                  <Text style={styles.infoIcon}>ⓘ</Text>
-                </TouchableOpacity>
-                {showInfoTooltip && (
-                  <View style={styles.tooltip}>
-                    <Text style={styles.tooltipText}>
-                      Monitoring WIF (dog wif hat) token transactions. There are a few transactions per minute involving WIF, to confirm this works feel free to buy a little WIF and your transaction should appear here in ~3 seconds
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => setShowInfoTooltip(false)}
-                      style={styles.tooltipClose}
-                    >
-                      <Text style={styles.tooltipCloseText}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
+              <TouchableOpacity
+                onPress={() => setShowInfoTooltip(true)}
+                style={styles.infoIconButton}
+              >
+                <Text style={styles.infoIcon}>ⓘ</Text>
+              </TouchableOpacity>
             )}
           </View>
         </View>
@@ -177,6 +162,32 @@ export default function App() {
         <View style={styles.content}>
           {renderScreen()}
         </View>
+
+        <Modal
+          visible={showInfoTooltip}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowInfoTooltip(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowInfoTooltip(false)}
+          >
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>ℹ️ How It Works</Text>
+              <Text style={styles.modalText}>
+                Monitoring WIF (dog wif hat) token transactions. There are a few transactions per minute involving WIF, to confirm this works feel free to buy a little WIF and your transaction should appear here in ~3 seconds
+              </Text>
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowInfoTooltip(false)}
+              >
+                <Text style={styles.modalCloseText}>Got it</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
         <StatusBar style="light" />
       </SafeAreaView>
@@ -222,9 +233,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#f5f5f5',
   },
-  infoTooltipWrapper: {
-    zIndex: 9999,
-  },
   infoIconButton: {
     marginLeft: 8,
     padding: 4,
@@ -233,40 +241,50 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#6366f1',
   },
-  tooltip: {
-    position: 'absolute',
-    top: 35,
-    right: 0,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
     backgroundColor: '#2d2d2d',
-    borderRadius: 8,
-    padding: 16,
-    width: 300,
-    maxWidth: 300,
+    borderRadius: 12,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
     borderWidth: 1,
     borderColor: '#404040',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 8,
-    zIndex: 1000,
+    elevation: 10,
   },
-  tooltipText: {
-    fontSize: 13,
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#f5f5f5',
+    marginBottom: 12,
+  },
+  modalText: {
+    fontSize: 14,
     color: '#e0e0e0',
-    lineHeight: 20,
-    marginBottom: 8,
+    lineHeight: 22,
+    marginBottom: 20,
   },
-  tooltipClose: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    padding: 4,
+  modalCloseButton: {
+    backgroundColor: '#6366f1',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
   },
-  tooltipCloseText: {
+  modalCloseText: {
+    color: '#fff',
     fontSize: 16,
-    color: '#808080',
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   content: {
     flex: 1,
