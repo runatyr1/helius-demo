@@ -192,7 +192,8 @@ export default function EngChallengeScreen() {
     const intPart = num / divisor;
     const fractPart = num % divisor;
     const fractStr = fractPart.toString().padStart(decimals, '0');
-    return `${intPart}.${fractStr.slice(0, 6)}`;
+    const intPartFormatted = intPart.toLocaleString('en-US');
+    return `${intPartFormatted}.${fractStr.slice(0, 6)}`;
   };
 
   const getMintSymbol = (mint: string) => {
