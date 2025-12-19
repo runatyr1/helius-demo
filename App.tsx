@@ -149,7 +149,7 @@ export default function App() {
                selectedScreen}
             </Text>
             {selectedScreen === 'EngChallenge' && (
-              <View>
+              <View style={styles.infoTooltipWrapper}>
                 <TouchableOpacity
                   onPress={() => setShowInfoTooltip(!showInfoTooltip)}
                   style={styles.infoIconButton}
@@ -221,6 +221,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#f5f5f5',
+  },
+  infoTooltipWrapper: {
+    zIndex: 9999,
   },
   infoIconButton: {
     marginLeft: 8,
