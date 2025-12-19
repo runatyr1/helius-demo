@@ -196,8 +196,8 @@ export default function EngChallengeScreen() {
   };
 
   const getMintSymbol = (mint: string) => {
-    // Hardcoded for WIF demo
-    return 'WIF';
+    // Hardcoded for BONK demo
+    return 'BONK';
   };
 
   const openGrafana = () => {
@@ -443,7 +443,7 @@ const TransferCard = React.memo(({ transfer, index, formatTimestamp, formatSigna
         <Text style={styles.txAmount}>
           {formatAmount(transfer.amount, transfer.decimals)}{' '}
           <TouchableOpacity
-            onPress={() => Linking.openURL('https://coinmarketcap.com/currencies/dogwifhat/')}
+            onPress={() => Linking.openURL('https://coinmarketcap.com/currencies/bonk/')}
             style={styles.tokenLinkInline}
           >
             <Text style={styles.tokenLink}>{tokenSymbol}</Text>

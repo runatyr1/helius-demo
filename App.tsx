@@ -177,7 +177,7 @@ export default function App() {
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>ℹ️ How It Works</Text>
               <Text style={styles.modalText}>
-                Monitoring WIF (dog wif hat) token transactions. There are a few transactions per minute involving WIF, to confirm this works feel free to buy a little WIF and your transaction should appear here in ~3 seconds
+                Monitoring BONK token transactions. There are a few transactions per minute involving BONK, to confirm this works feel free to buy a little BONK and your transaction should appear here in ~3 seconds
               </Text>
               <TouchableOpacity
                 style={styles.modalCloseButton}
