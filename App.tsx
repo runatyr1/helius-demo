@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Modal } from 'r
 import { StatusBar } from 'expo-status-bar';
 import { Drawer } from 'react-native-drawer-layout';
 import LiveBalanceScreen from './src/screens/LiveBalanceScreen';
-import TransactionHistoryScreen from './src/screens/TransactionHistoryScreen';
+import TransactionHistoryScreen from './src/screens/TransactionHistoryScreen-disabled';
 import TransactionHistorySimScreen from './src/screens/TransactionHistorySimScreen';
 import NetworkHealthScreen from './src/screens/NetworkHealthScreen';
 import EngChallengeScreen from './src/screens/EngChallengeScreen';
@@ -56,6 +56,7 @@ export default function App() {
           </Text>
         </TouchableOpacity>
 
+        {/* Disabled - Transaction History (Paid) requires paid API key
         <TouchableOpacity
           style={[
             styles.menuItem,
@@ -70,6 +71,7 @@ export default function App() {
             📜 Transaction History (Paid)
           </Text>
         </TouchableOpacity>
+        */}
 
         <TouchableOpacity
           style={[
