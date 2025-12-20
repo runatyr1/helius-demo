@@ -16,8 +16,8 @@ import {
   lamportsToSol,
 } from '../services/helius';
 
-const REFRESH_INTERVAL = 2000; // 2 seconds
-const BATCH_SIZE = 100; // Fetch 100 transactions at a time
+const REFRESH_INTERVAL = 500; // 500ms - fetch 2x per second for smooth streaming
+const BATCH_SIZE = 20; // Smaller batches for more frequent, smoother updates
 
 export default function TransactionHistorySimScreen() {
   const [transactions, setTransactions] = useState<SimulatedTransaction[]>([]);
@@ -320,7 +320,7 @@ export default function TransactionHistorySimScreen() {
               </Text>
               <Text style={styles.listSubtitle}>
                 {isMonitoring
-                  ? 'New transactions appear at top • Auto-refresh every 2s'
+                  ? 'New transactions appear at top • Auto-refresh every 0.5s'
                   : 'Scroll through captured transactions • Pull down to restart'}
               </Text>
             </View>
@@ -349,8 +349,8 @@ const TransactionCard = React.memo(({ tx, index, formatTimestamp, formatSignatur
   formatSignature: (sig: string) => string;
   lamportsToSol: (lamports: number) => number;
 }) => {
-  // Animation for new transactions (first 10 are considered "new")
-  const isNew = index < 10;
+  // Animation for new transactions (first 5 are considered "new" for smaller batches)
+  const isNew = index < 5;
   const scaleAnim = useRef(new Animated.Value(isNew ? 0 : 1)).current;
   const opacityAnim = useRef(new Animated.Value(isNew ? 0 : 1)).current;
 
@@ -359,13 +359,13 @@ const TransactionCard = React.memo(({ tx, index, formatTimestamp, formatSignatur
       Animated.parallel([
         Animated.spring(scaleAnim, {
           toValue: 1,
-          friction: 8,
-          tension: 40,
+          friction: 6, // Reduced friction for snappier animation
+          tension: 50, // Increased tension for faster spring
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
           toValue: 1,
-          duration: 300,
+          duration: 200, // Faster fade-in for smoother feel
           useNativeDriver: true,
         }),
       ]).start();
