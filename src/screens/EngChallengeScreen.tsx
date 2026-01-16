@@ -21,6 +21,9 @@ const REFRESH_INTERVAL = 2000; // 2 seconds
 const BATCH_SIZE = 100; // Fetch 100 transfers at a time
 const GRAFANA_URL = process.env.EXPO_PUBLIC_GRAFANA_URL || '';
 
+const MAX_RETRIES = 5;
+const INITIAL_RETRY_DELAY = 1000; // 1 second
+
 export default function EngChallengeScreen() {
   const [transfers, setTransfers] = useState<TokenTransfer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,6 +34,8 @@ export default function EngChallengeScreen() {
   const [totalFetched, setTotalFetched] = useState(0);
   const [currentRate, setCurrentRate] = useState(0);
   const [addressFilter, setAddressFilter] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const seenSignatures = useRef<Set<string>>(new Set());
   const [monitoringStartTime, setMonitoringStartTime] = useState<Date>(new Date());
@@ -46,7 +51,7 @@ export default function EngChallengeScreen() {
     isMonitoringRef.current = isMonitoring;
   }, [isMonitoring]);
 
-  const fetchTransfers = async (isManualRefresh = false) => {
+  const fetchTransfers = async (isManualRefresh = false, currentRetry = 0) => {
     if ((isPausedRef.current || !isMonitoringRef.current) && !isManualRefresh) {
       return;
     }
@@ -54,6 +59,11 @@ export default function EngChallengeScreen() {
     try {
       if (isManualRefresh) {
         setIsRefreshing(true);
+      }
+
+      if (currentRetry > 0) {
+        setIsRetrying(true);
+        setRetryCount(currentRetry);
       }
 
       const response = await getTokenTransfers(BATCH_SIZE, 0);
@@ -79,18 +89,42 @@ export default function EngChallengeScreen() {
         }
       }
 
+      // Success - reset retry state
       setError(null);
       setIsLoading(false);
+      setIsRetrying(false);
+      setRetryCount(0);
     } catch (error: any) {
       console.error('Error fetching token transfers:', error);
-      setError(error.message || 'Failed to fetch transfers');
-      setIsLoading(false);
 
-      if (isManualRefresh) {
-        Alert.alert('Error', error.message || 'Failed to fetch transfers');
+      // Retry logic with exponential backoff
+      if (currentRetry < MAX_RETRIES) {
+        const nextRetry = currentRetry + 1;
+        const delay = INITIAL_RETRY_DELAY * Math.pow(2, currentRetry);
+
+        console.log(`Retry attempt ${nextRetry}/${MAX_RETRIES} in ${delay}ms`);
+        setError(`Connection failed. Retrying (${nextRetry}/${MAX_RETRIES})...`);
+        setIsRetrying(true);
+        setRetryCount(nextRetry);
+
+        setTimeout(() => {
+          fetchTransfers(isManualRefresh, nextRetry);
+        }, delay);
+      } else {
+        // Max retries reached
+        setError(error.message || 'Failed to fetch transfers after multiple attempts');
+        setIsLoading(false);
+        setIsRetrying(false);
+        setRetryCount(0);
+
+        if (isManualRefresh) {
+          Alert.alert('Error', error.message || 'Failed to fetch transfers after multiple attempts');
+        }
       }
     } finally {
-      setIsRefreshing(false);
+      if (currentRetry >= MAX_RETRIES || !error) {
+        setIsRefreshing(false);
+      }
     }
   };
 
@@ -230,7 +264,16 @@ export default function EngChallengeScreen() {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#6366f1" />
-        <Text style={styles.loadingText}>Loading token transfers...</Text>
+        <Text style={styles.loadingText}>
+          {isRetrying
+            ? `Retrying connection (${retryCount}/${MAX_RETRIES})...`
+            : 'Loading token transfers...'}
+        </Text>
+        {isRetrying && (
+          <Text style={styles.retrySubtext}>
+            Connection attempt {retryCount} of {MAX_RETRIES}
+          </Text>
+        )}
       </View>
     );
   }
