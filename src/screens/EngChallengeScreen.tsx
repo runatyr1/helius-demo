@@ -281,12 +281,25 @@ export default function EngChallengeScreen() {
   if (error && transfers.length === 0) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.errorIcon}>⚠️</Text>
-        <Text style={styles.errorTitle}>Connection Error</Text>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => fetchTransfers(true)}>
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
+        {isRetrying ? (
+          <>
+            <ActivityIndicator size="large" color="#f59e0b" />
+            <Text style={styles.retryingTitle}>Retrying Connection...</Text>
+            <Text style={styles.retryingText}>
+              Attempt {retryCount} of {MAX_RETRIES}
+            </Text>
+            <Text style={styles.errorText}>{error}</Text>
+          </>
+        ) : (
+          <>
+            <Text style={styles.errorIcon}>⚠️</Text>
+            <Text style={styles.errorTitle}>Connection Error</Text>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={() => fetchTransfers(true)}>
+              <Text style={styles.retryButtonText}>Retry Manually</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     );
   }
@@ -328,6 +341,16 @@ export default function EngChallengeScreen() {
           )}
         </View>
       </View>
+
+      {/* Retry Banner */}
+      {isRetrying && (
+        <View style={styles.retryBanner}>
+          <ActivityIndicator size="small" color="#f59e0b" style={styles.retrySpinner} />
+          <Text style={styles.retryBannerText}>
+            Reconnecting... (Attempt {retryCount}/{MAX_RETRIES})
+          </Text>
+        </View>
+      )}
 
       <View style={styles.statsBar}>
         <View style={styles.statItem}>
@@ -520,6 +543,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#b0b0b0',
   },
+  retrySubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#808080',
+  },
+  retryingTitle: {
+    marginTop: 16,
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#f59e0b',
+    marginBottom: 8,
+  },
+  retryingText: {
+    fontSize: 16,
+    color: '#f59e0b',
+    marginBottom: 8,
+  },
   errorIcon: {
     fontSize: 64,
     marginBottom: 16,
@@ -602,6 +642,22 @@ const styles = StyleSheet.create({
   },
   authorBold: {
     fontWeight: 'bold',
+  },
+  retryBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f59e0b',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  retrySpinner: {
+    marginRight: 8,
+  },
+  retryBannerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
   },
   grafanaLink: {
     paddingHorizontal: 12,
