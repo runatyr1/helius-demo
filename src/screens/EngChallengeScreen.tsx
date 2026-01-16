@@ -36,7 +36,10 @@ export default function EngChallengeScreen() {
   const [addressFilter, setAddressFilter] = useState('');
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [loadingStartTime, setLoadingStartTime] = useState<Date>(new Date());
+  const [loadingElapsed, setLoadingElapsed] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const seenSignatures = useRef<Set<string>>(new Set());
   const [monitoringStartTime, setMonitoringStartTime] = useState<Date>(new Date());
 
@@ -51,27 +54,66 @@ export default function EngChallengeScreen() {
     isMonitoringRef.current = isMonitoring;
   }, [isMonitoring]);
 
+  // Track loading time
+  useEffect(() => {
+    if (isLoading) {
+      setLoadingStartTime(new Date());
+      setLoadingElapsed(0);
+
+      loadingTimerRef.current = setInterval(() => {
+        setLoadingElapsed(Date.now() - loadingStartTime.getTime());
+      }, 100);
+
+      return () => {
+        if (loadingTimerRef.current) {
+          clearInterval(loadingTimerRef.current);
+        }
+      };
+    } else {
+      if (loadingTimerRef.current) {
+        clearInterval(loadingTimerRef.current);
+      }
+    }
+  }, [isLoading]);
+
   const fetchTransfers = async (isManualRefresh = false, currentRetry = 0) => {
+    const fetchStartTime = Date.now();
+    const attemptLabel = currentRetry > 0 ? `[Retry ${currentRetry}/${MAX_RETRIES}]` : '[Initial]';
+
+    console.log(`${attemptLabel} Starting fetch at ${new Date().toISOString()}`);
+
     if ((isPausedRef.current || !isMonitoringRef.current) && !isManualRefresh) {
+      console.log(`${attemptLabel} Fetch skipped - paused:${isPausedRef.current}, monitoring:${isMonitoringRef.current}`);
       return;
     }
 
     try {
       if (isManualRefresh) {
+        console.log(`${attemptLabel} Manual refresh triggered`);
         setIsRefreshing(true);
       }
 
       if (currentRetry > 0) {
+        console.log(`${attemptLabel} Setting retry UI state`);
         setIsRetrying(true);
         setRetryCount(currentRetry);
       }
 
+      console.log(`${attemptLabel} Calling API: getTokenTransfers(${BATCH_SIZE}, 0)`);
+      const apiCallStart = Date.now();
       const response = await getTokenTransfers(BATCH_SIZE, 0);
+      const apiCallDuration = Date.now() - apiCallStart;
 
+      console.log(`${attemptLabel} API call completed in ${apiCallDuration}ms`);
+      console.log(`${attemptLabel} Received ${response.transfers.length} transfers from API`);
+
+      const processingStart = Date.now();
       if (response.transfers.length > 0) {
         const newTransfers = response.transfers.filter(
           (tx) => !seenSignatures.current.has(tx.signature)
         );
+
+        console.log(`${attemptLabel} Filtered to ${newTransfers.length} new transfers (${response.transfers.length - newTransfers.length} duplicates)`);
 
         if (newTransfers.length > 0) {
           newTransfers.forEach((tx) => {
@@ -87,7 +129,15 @@ export default function EngChallengeScreen() {
             return newTotal;
           });
         }
+      } else {
+        console.log(`${attemptLabel} No transfers received from API`);
       }
+
+      const processingDuration = Date.now() - processingStart;
+      const totalDuration = Date.now() - fetchStartTime;
+
+      console.log(`${attemptLabel} Processing completed in ${processingDuration}ms`);
+      console.log(`${attemptLabel} ✓ Total fetch operation: ${totalDuration}ms (API: ${apiCallDuration}ms, Processing: ${processingDuration}ms)`);
 
       // Success - reset retry state
       setError(null);
@@ -95,23 +145,31 @@ export default function EngChallengeScreen() {
       setIsRetrying(false);
       setRetryCount(0);
     } catch (error: any) {
-      console.error('Error fetching token transfers:', error);
+      const totalDuration = Date.now() - fetchStartTime;
+      console.error(`${attemptLabel} ✗ Fetch failed after ${totalDuration}ms:`, error);
+      console.error(`${attemptLabel} Error details:`, {
+        message: error.message,
+        name: error.name,
+        stack: error.stack?.split('\n').slice(0, 3).join('\n'),
+      });
 
       // Retry logic with exponential backoff
       if (currentRetry < MAX_RETRIES) {
         const nextRetry = currentRetry + 1;
         const delay = INITIAL_RETRY_DELAY * Math.pow(2, currentRetry);
 
-        console.log(`Retry attempt ${nextRetry}/${MAX_RETRIES} in ${delay}ms`);
+        console.log(`${attemptLabel} ⟳ Scheduling retry ${nextRetry}/${MAX_RETRIES} in ${delay}ms`);
         setError(`Connection failed. Retrying (${nextRetry}/${MAX_RETRIES})...`);
         setIsRetrying(true);
         setRetryCount(nextRetry);
 
         setTimeout(() => {
+          console.log(`[Retry ${nextRetry}/${MAX_RETRIES}] Starting retry now...`);
           fetchTransfers(isManualRefresh, nextRetry);
         }, delay);
       } else {
         // Max retries reached
+        console.error(`${attemptLabel} ✗✗✗ All ${MAX_RETRIES} retry attempts exhausted. Giving up.`);
         setError(error.message || 'Failed to fetch transfers after multiple attempts');
         setIsLoading(false);
         setIsRetrying(false);
@@ -151,11 +209,18 @@ export default function EngChallengeScreen() {
   };
 
   useEffect(() => {
+    console.log('=== EngChallengeScreen mounted ===');
+    console.log('Starting initial data fetch...');
+
     startAutoRefresh();
 
     return () => {
+      console.log('=== EngChallengeScreen unmounting ===');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+      }
+      if (loadingTimerRef.current) {
+        clearInterval(loadingTimerRef.current);
       }
     };
   }, []);
@@ -261,19 +326,33 @@ export default function EngChallengeScreen() {
     : transfers;
 
   if (isLoading) {
+    const elapsedSeconds = (loadingElapsed / 1000).toFixed(1);
+    const isSlowLoading = loadingElapsed > 3000;
+
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#6366f1" />
-        <Text style={styles.loadingText}>
+        <ActivityIndicator size="large" color={isSlowLoading ? '#f59e0b' : '#6366f1'} />
+        <Text style={[styles.loadingText, isSlowLoading && { color: '#f59e0b' }]}>
           {isRetrying
             ? `Retrying connection (${retryCount}/${MAX_RETRIES})...`
-            : 'Loading token transfers...'}
+            : 'Connecting to backend...'}
+        </Text>
+        <Text style={styles.loadingElapsed}>
+          {elapsedSeconds}s elapsed
         </Text>
         {isRetrying && (
           <Text style={styles.retrySubtext}>
             Connection attempt {retryCount} of {MAX_RETRIES}
           </Text>
         )}
+        {isSlowLoading && !isRetrying && (
+          <Text style={styles.slowLoadingWarning}>
+            ⚠️ Taking longer than expected...
+          </Text>
+        )}
+        <Text style={styles.loadingHint}>
+          Check console logs for details
+        </Text>
       </View>
     );
   }
@@ -542,6 +621,26 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#b0b0b0',
+    fontWeight: '600',
+  },
+  loadingElapsed: {
+    marginTop: 8,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#6366f1',
+    fontFamily: 'monospace',
+  },
+  slowLoadingWarning: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#f59e0b',
+    fontWeight: '600',
+  },
+  loadingHint: {
+    marginTop: 16,
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
   },
   retrySubtext: {
     marginTop: 8,
