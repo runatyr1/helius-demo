@@ -1,23 +1,38 @@
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
-const HELIUS_API_KEY = process.env.EXPO_PUBLIC_HELIUS_API_KEY || '';
+// Backend proxy URL (API key is kept server-side)
+const HELIUS_PROXY_URL = process.env.EXPO_PUBLIC_HELIUS_PROXY_URL || '';
 
-export const getHeliusHttpUrl = (): string => {
-  if (!HELIUS_API_KEY) {
-    throw new Error('EXPO_PUBLIC_HELIUS_API_KEY is not set in .env file');
+const getProxyUrl = (): string => {
+  if (!HELIUS_PROXY_URL) {
+    throw new Error('EXPO_PUBLIC_HELIUS_PROXY_URL is not set in .env file');
   }
-  return `https://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
+  return HELIUS_PROXY_URL;
 };
 
-export const getHeliusWsUrl = (): string => {
-  if (!HELIUS_API_KEY) {
-    throw new Error('EXPO_PUBLIC_HELIUS_API_KEY is not set in .env file');
+// Generic RPC call via proxy
+const proxyRpcCall = async (method: string, params: unknown[] | object = []): Promise<unknown> => {
+  const response = await fetch(`${getProxyUrl()}/api/helius/rpc`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method,
+      params,
+    }),
+  });
+  const data = await response.json();
+  if (data.error) {
+    throw new Error(data.error.message || 'RPC error');
   }
-  return `wss://mainnet.helius-rpc.com/?api-key=${HELIUS_API_KEY}`;
+  return data.result;
 };
 
+// Connection that uses proxy (for @solana/web3.js compatibility)
 export const createConnection = (): Connection => {
-  return new Connection(getHeliusHttpUrl(), {
+  // Use proxy endpoint as RPC URL - Connection will POST to it
+  return new Connection(`${getProxyUrl()}/api/helius/rpc`, {
     commitment: 'confirmed',
   });
 };
@@ -70,22 +85,10 @@ export const getTransactionsForAddress = async (
   address: string,
   limit: number = 10
 ): Promise<HeliusTransaction[]> => {
-  const url = getHeliusHttpUrl();
-
-  const response = await fetch(url, {
+  const response = await fetch(`${getProxyUrl()}/api/helius/transactions`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 'helius-tx-history',
-      method: 'getTransactionsForAddress',
-      params: {
-        address,
-        limit,
-      },
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ address, limit }),
   });
 
   const data = await response.json();
@@ -125,18 +128,8 @@ export interface SolanaVersion {
 
 // Network Health API Methods
 export const getNetworkHealth = async (): Promise<string> => {
-  const connection = createConnection();
-  const response = await fetch(connection.rpcEndpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'getHealth',
-    }),
-  });
-  const data = await response.json();
-  return data.result || 'ok';
+  const result = await proxyRpcCall('getHealth');
+  return (result as string) || 'ok';
 };
 
 export const getBlockHeight = async (): Promise<number> => {
@@ -150,34 +143,13 @@ export const getEpochInfo = async (): Promise<EpochInfo> => {
 };
 
 export const getRecentPerformanceSamples = async (limit: number = 10): Promise<PerformanceSample[]> => {
-  const connection = createConnection();
-  const response = await fetch(connection.rpcEndpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'getRecentPerformanceSamples',
-      params: [limit],
-    }),
-  });
-  const data = await response.json();
-  return data.result || [];
+  const result = await proxyRpcCall('getRecentPerformanceSamples', [limit]);
+  return (result as PerformanceSample[]) || [];
 };
 
 export const getSolanaVersion = async (): Promise<SolanaVersion> => {
-  const connection = createConnection();
-  const response = await fetch(connection.rpcEndpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'getVersion',
-    }),
-  });
-  const data = await response.json();
-  return data.result || { 'solana-core': 'unknown', 'feature-set': 0 };
+  const result = await proxyRpcCall('getVersion');
+  return (result as SolanaVersion) || { 'solana-core': 'unknown', 'feature-set': 0 };
 };
 
 // === Helius API Demo (Simulated Transactions) ===
