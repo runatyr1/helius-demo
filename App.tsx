@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Modal } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Modal, Animated, Linking } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Drawer } from 'react-native-drawer-layout';
 import LiveBalanceScreen from './src/screens/LiveBalanceScreen';
@@ -12,6 +12,21 @@ export default function App() {
   const [open, setOpen] = useState(false);
   const [selectedScreen, setSelectedScreen] = useState('EngChallenge');
   const [showInfoTooltip, setShowInfoTooltip] = useState(false);
+  const [showSimInfoTooltip, setShowSimInfoTooltip] = useState(false);
+
+  // Blinking animation for info icon
+  const blinkAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const blink = Animated.loop(
+      Animated.sequence([
+        Animated.timing(blinkAnim, { toValue: 0.3, duration: 500, useNativeDriver: true }),
+        Animated.timing(blinkAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      ])
+    );
+    blink.start();
+    return () => blink.stop();
+  }, []);
 
   const navigateTo = (screen: string) => {
     setSelectedScreen(screen);
@@ -38,6 +53,21 @@ export default function App() {
             selectedScreen === 'EngChallenge' && styles.menuItemTextActive
           ]}>
             🪙 Helius Eng Challenge
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.menuItem,
+            selectedScreen === 'TransactionHistorySim' && styles.menuItemActive
+          ]}
+          onPress={() => navigateTo('TransactionHistorySim')}
+        >
+          <Text style={[
+            styles.menuItemText,
+            selectedScreen === 'TransactionHistorySim' && styles.menuItemTextActive
+          ]}>
+            🔄 Transaction History (Simulated)
           </Text>
         </TouchableOpacity>
 
@@ -76,21 +106,6 @@ export default function App() {
         <TouchableOpacity
           style={[
             styles.menuItem,
-            selectedScreen === 'TransactionHistorySim' && styles.menuItemActive
-          ]}
-          onPress={() => navigateTo('TransactionHistorySim')}
-        >
-          <Text style={[
-            styles.menuItemText,
-            selectedScreen === 'TransactionHistorySim' && styles.menuItemTextActive
-          ]}>
-            🔄 Transaction History (Sim)
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.menuItem,
             selectedScreen === 'NetworkHealth' && styles.menuItemActive
           ]}
           onPress={() => navigateTo('NetworkHealth')}
@@ -100,6 +115,18 @@ export default function App() {
             selectedScreen === 'NetworkHealth' && styles.menuItemTextActive
           ]}>
             🌐 Network Health
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.menuItem}
+          onPress={() => {
+            setOpen(false);
+            Linking.openURL('https://runatyr.dev/');
+          }}
+        >
+          <Text style={styles.menuItemText}>
+            📕 Go to Blog
           </Text>
         </TouchableOpacity>
       </View>
@@ -146,7 +173,7 @@ export default function App() {
               {selectedScreen === 'EngChallenge' ? 'Helius Eng Challenge' :
                selectedScreen === 'LiveBalance' ? 'Live Balance' :
                selectedScreen === 'TransactionHistory' ? 'Transaction History' :
-               selectedScreen === 'TransactionHistorySim' ? 'Transaction History (Sim)' :
+               selectedScreen === 'TransactionHistorySim' ? 'Transaction History (Simulated)' :
                selectedScreen === 'NetworkHealth' ? 'Network Health' :
                selectedScreen}
             </Text>
@@ -155,7 +182,15 @@ export default function App() {
                 onPress={() => setShowInfoTooltip(true)}
                 style={styles.infoIconButton}
               >
-                <Text style={styles.infoIcon}>ⓘ</Text>
+                <Animated.Text style={[styles.infoIcon, { opacity: blinkAnim }]}>ⓘ</Animated.Text>
+              </TouchableOpacity>
+            )}
+            {selectedScreen === 'TransactionHistorySim' && (
+              <TouchableOpacity
+                onPress={() => setShowSimInfoTooltip(true)}
+                style={styles.infoIconButton}
+              >
+                <Animated.Text style={[styles.infoIcon, { opacity: blinkAnim }]}>ⓘ</Animated.Text>
               </TouchableOpacity>
             )}
           </View>
@@ -181,9 +216,48 @@ export default function App() {
               <Text style={styles.modalText}>
                 Monitoring BONK token transactions. There are a few transactions per minute involving BONK, to confirm this works feel free to buy a little BONK and your transaction should appear here in ~3 seconds
               </Text>
+              <View style={styles.modalButtonRow}>
+                <TouchableOpacity
+                  style={[styles.modalCloseButton, styles.modalDocsButton]}
+                  onPress={() => {
+                    setShowInfoTooltip(false);
+                    Linking.openURL('https://runatyr.dev/projects/solana-token-transaction-indexer/');
+                  }}
+                >
+                  <Text style={styles.modalCloseText}>Go to Docs</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={() => setShowInfoTooltip(false)}
+                >
+                  <Text style={styles.modalCloseText}>Got it</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
+        <Modal
+          visible={showSimInfoTooltip}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowSimInfoTooltip(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowSimInfoTooltip(false)}
+          >
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>ℹ️ Data Pipeline Demo</Text>
+              <Text style={styles.modalText}>
+                This demonstrates a full data pipeline with simulated Solana-like transactions. The backend includes a transaction generator (producer), Kafka message queue, PostgreSQL database (consumer), and REST API — all running on Kubernetes. This app streams data from that pipeline in real-time.
+                {'\n\n'}
+                A maximum of 1,000 transactions are displayed; once reached, new transactions replace older ones.
+              </Text>
               <TouchableOpacity
                 style={styles.modalCloseButton}
-                onPress={() => setShowInfoTooltip(false)}
+                onPress={() => setShowSimInfoTooltip(false)}
               >
                 <Text style={styles.modalCloseText}>Got it</Text>
               </TouchableOpacity>
@@ -240,8 +314,11 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   infoIcon: {
-    fontSize: 18,
-    color: '#6366f1',
+    fontSize: 22,
+    color: '#00FFFF',
+    textShadowColor: '#00FFFF',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
   modalOverlay: {
     flex: 1,
@@ -276,12 +353,20 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 20,
   },
+  modalButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
   modalCloseButton: {
     backgroundColor: '#6366f1',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
     alignItems: 'center',
+    flex: 1,
+  },
+  modalDocsButton: {
+    backgroundColor: '#10b981',
   },
   modalCloseText: {
     color: '#fff',
