@@ -18,6 +18,7 @@ import {
 
 const REFRESH_INTERVAL = 500; // 500ms - fetch 2x per second for smooth streaming
 const BATCH_SIZE = 20; // Smaller batches for more frequent, smoother updates
+const MAX_TRANSACTIONS = 1000; // Keep newest 1000 transactions, erase older ones
 
 export default function TransactionHistorySimScreen() {
   const [transactions, setTransactions] = useState<SimulatedTransaction[]>([]);
@@ -80,8 +81,17 @@ export default function TransactionHistorySimScreen() {
             seenSignatures.current.add(tx.signature);
           });
 
-          // Prepend new transactions (newest at top)
-          setTransactions((prev) => [...newTransactions, ...prev]);
+          // Prepend new transactions (newest at top), keep max 500
+          setTransactions((prev) => {
+            const updated = [...newTransactions, ...prev];
+            if (updated.length > MAX_TRANSACTIONS) {
+              // Remove signatures of trimmed transactions from seen set
+              const trimmed = updated.slice(MAX_TRANSACTIONS);
+              trimmed.forEach((tx) => seenSignatures.current.delete(tx.signature));
+              return updated.slice(0, MAX_TRANSACTIONS);
+            }
+            return updated;
+          });
           setTotalFetched((prev) => {
             const newTotal = prev + newTransactions.length;
             // Calculate rate: total transactions / elapsed seconds
