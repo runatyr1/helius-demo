@@ -56,6 +56,7 @@ export default function App() {
           </Text>
         </TouchableOpacity>
 
+        {/* Disabled - Intermittent connection issues, needs troubleshooting
         <TouchableOpacity
           style={[
             styles.menuItem,
@@ -70,6 +71,7 @@ export default function App() {
             🔄 Transaction History (Simulated)
           </Text>
         </TouchableOpacity>
+        */}
 
         <TouchableOpacity
           style={[
