@@ -15,6 +15,7 @@ import {
 import {
   getTokenTransfers,
   TokenTransfer,
+  sendBonk,
 } from '../services/helius-eng-challenge-ws';
 
 const REFRESH_INTERVAL = 2000; // 2 seconds
@@ -38,6 +39,11 @@ export default function EngChallengeScreen() {
   const [isRetrying, setIsRetrying] = useState(false);
   const [loadingStartTime, setLoadingStartTime] = useState<Date>(new Date());
   const [loadingElapsed, setLoadingElapsed] = useState(0);
+  // Send BONK state
+  const [bonkAmount, setBonkAmount] = useState(1);
+  const [isSendingBonk, setIsSendingBonk] = useState(false);
+  const [bonkError, setBonkError] = useState<string | null>(null);
+  const [lastBonkSignature, setLastBonkSignature] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const seenSignatures = useRef<Set<string>>(new Set());
@@ -308,6 +314,30 @@ export default function EngChallengeScreen() {
     }
   };
 
+  const handleSendBonk = async () => {
+    setIsSendingBonk(true);
+    setBonkError(null);
+    setLastBonkSignature(null);
+
+    try {
+      const result = await sendBonk(bonkAmount);
+      setLastBonkSignature(result.signature);
+      // Auto-increment by 0.01 for easy tx identification
+      setBonkAmount((prev) => Math.round((prev + 0.01) * 100) / 100);
+    } catch (err: any) {
+      setBonkError(err.message || 'Failed to send');
+    } finally {
+      setIsSendingBonk(false);
+    }
+  };
+
+  const adjustBonkAmount = (delta: number) => {
+    setBonkAmount((prev) => {
+      const newVal = Math.round((prev + delta) * 100) / 100;
+      return Math.max(0.01, Math.min(50, newVal));
+    });
+  };
+
   // Filter transfers by address (full or partial match on from/to)
   const filteredTransfers = addressFilter.trim()
     ? transfers.filter(tx => {
@@ -473,6 +503,49 @@ export default function EngChallengeScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Send BONK Section */}
+      <View style={styles.sendBonkBar}>
+        <TouchableOpacity style={styles.bonkAdjustBtn} onPress={() => adjustBonkAmount(-1)}>
+          <Text style={styles.bonkAdjustText}>-1</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bonkAdjustBtnSmall} onPress={() => adjustBonkAmount(-0.01)}>
+          <Text style={styles.bonkAdjustText}>-.01</Text>
+        </TouchableOpacity>
+        <Text style={styles.bonkAmountText}>{bonkAmount.toFixed(2)}</Text>
+        <TouchableOpacity style={styles.bonkAdjustBtnSmall} onPress={() => adjustBonkAmount(0.01)}>
+          <Text style={styles.bonkAdjustText}>+.01</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bonkAdjustBtn} onPress={() => adjustBonkAmount(1)}>
+          <Text style={styles.bonkAdjustText}>+1</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.sendBonkButton, isSendingBonk && styles.sendBonkButtonDisabled]}
+          onPress={handleSendBonk}
+          disabled={isSendingBonk}
+        >
+          {isSendingBonk ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.sendBonkButtonText}>Send BONK</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+      {bonkError && (
+        <View style={styles.bonkErrorBar}>
+          <Text style={styles.bonkErrorText}>{bonkError}</Text>
+        </View>
+      )}
+      {lastBonkSignature && (
+        <TouchableOpacity
+          style={styles.bonkSuccessBar}
+          onPress={() => Linking.openURL(`https://solscan.io/tx/${lastBonkSignature}`)}
+        >
+          <Text style={styles.bonkSuccessText}>
+            Sent! {lastBonkSignature.slice(0, 8)}...{lastBonkSignature.slice(-8)}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       <ScrollView
         style={styles.scrollView}
@@ -946,5 +1019,74 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#6366f1',
     textDecorationLine: 'underline',
+  },
+  // Send BONK styles
+  sendBonkBar: {
+    flexDirection: 'row',
+    backgroundColor: '#252525',
+    padding: 8,
+    gap: 6,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#404040',
+  },
+  bonkAdjustBtn: {
+    backgroundColor: '#404040',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  bonkAdjustBtnSmall: {
+    backgroundColor: '#353535',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  bonkAdjustText: {
+    color: '#e0e0e0',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  bonkAmountText: {
+    color: '#f5f5f5',
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+    minWidth: 60,
+    textAlign: 'center',
+  },
+  sendBonkButton: {
+    backgroundColor: '#f59e0b',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginLeft: 'auto',
+  },
+  sendBonkButtonDisabled: {
+    backgroundColor: '#666',
+  },
+  sendBonkButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  bonkErrorBar: {
+    backgroundColor: '#ef4444',
+    padding: 8,
+  },
+  bonkErrorText: {
+    color: '#fff',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  bonkSuccessBar: {
+    backgroundColor: '#10b981',
+    padding: 8,
+  },
+  bonkSuccessText: {
+    color: '#fff',
+    fontSize: 12,
+    textAlign: 'center',
+    fontFamily: 'monospace',
   },
 });

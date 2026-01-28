@@ -89,3 +89,45 @@ export const getTokenTransfers = async (
     throw error;
   }
 };
+
+export interface SendBonkResponse {
+  success: boolean;
+  signature: string;
+  explorerUrl: string;
+  amount: number;
+}
+
+export const sendBonk = async (amount: number): Promise<SendBonkResponse> => {
+  const requestId = Math.random().toString(36).substring(7);
+  console.log(`[API ${requestId}] Sending ${amount} BONK...`);
+
+  if (!ENG_CHALLENGE_ENDPOINT) {
+    throw new Error('Eng Challenge endpoint not configured');
+  }
+
+  const url = `${ENG_CHALLENGE_ENDPOINT}/api/send-bonk`;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (ENG_CHALLENGE_API_KEY) {
+    headers['x-api-key'] = ENG_CHALLENGE_API_KEY;
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ amount }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error(`[API ${requestId}] Send BONK failed:`, data.error);
+    throw new Error(data.error || `HTTP ${response.status}`);
+  }
+
+  console.log(`[API ${requestId}] BONK sent! Signature: ${data.signature}`);
+  return data;
+};
