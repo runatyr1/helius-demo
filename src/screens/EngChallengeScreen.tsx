@@ -17,10 +17,11 @@ import {
   TokenTransfer,
   sendBonk,
 } from '../services/helius-eng-challenge-ws';
+import { getPublicEnv } from '../config/runtime';
 
 const REFRESH_INTERVAL = 2000; // 2 seconds
 const BATCH_SIZE = 100; // Fetch 100 transfers at a time
-const GRAFANA_URL = process.env.EXPO_PUBLIC_GRAFANA_URL || '';
+const GRAFANA_URL = getPublicEnv('EXPO_PUBLIC_GRAFANA_URL');
 
 const MAX_RETRIES = 5;
 const INITIAL_RETRY_DELAY = 1000; // 1 second

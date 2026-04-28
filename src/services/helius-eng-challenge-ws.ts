@@ -1,7 +1,6 @@
 // Helius Engineering Challenge - Token Indexer API Client
 
-const ENG_CHALLENGE_ENDPOINT = process.env.EXPO_PUBLIC_ENG_CHALLENGE_ENDPOINT || '';
-const ENG_CHALLENGE_API_KEY = process.env.EXPO_PUBLIC_ENG_CHALLENGE_API_KEY || '';
+import { getPublicEnv } from '../config/runtime';
 
 export interface TokenTransfer {
   signature: string;
@@ -26,6 +25,8 @@ export const getTokenTransfers = async (
   limit: number = 100,
   offset: number = 0
 ): Promise<TokenTransfersResponse> => {
+  const ENG_CHALLENGE_ENDPOINT = getPublicEnv('EXPO_PUBLIC_ENG_CHALLENGE_ENDPOINT');
+  const ENG_CHALLENGE_API_KEY = getPublicEnv('EXPO_PUBLIC_ENG_CHALLENGE_API_KEY');
   const requestStart = Date.now();
   const requestId = Math.random().toString(36).substring(7);
 
@@ -98,6 +99,8 @@ export interface SendBonkResponse {
 }
 
 export const sendBonk = async (amount: number): Promise<SendBonkResponse> => {
+  const ENG_CHALLENGE_ENDPOINT = getPublicEnv('EXPO_PUBLIC_ENG_CHALLENGE_ENDPOINT');
+  const ENG_CHALLENGE_API_KEY = getPublicEnv('EXPO_PUBLIC_ENG_CHALLENGE_API_KEY');
   const requestId = Math.random().toString(36).substring(7);
   console.log(`[API ${requestId}] Sending ${amount} BONK...`);
 

@@ -1,9 +1,8 @@
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
-
-// Backend proxy URL (API key is kept server-side)
-const HELIUS_PROXY_URL = process.env.EXPO_PUBLIC_HELIUS_PROXY_URL || '';
+import { getPublicEnv } from '../config/runtime';
 
 const getProxyUrl = (): string => {
+  const HELIUS_PROXY_URL = getPublicEnv('EXPO_PUBLIC_HELIUS_PROXY_URL');
   if (!HELIUS_PROXY_URL) {
     throw new Error('EXPO_PUBLIC_HELIUS_PROXY_URL is not set in .env file');
   }
@@ -154,9 +153,6 @@ export const getSolanaVersion = async (): Promise<SolanaVersion> => {
 
 // === Helius API Demo (Simulated Transactions) ===
 
-const API_DEMO_ENDPOINT = process.env.EXPO_PUBLIC_API_DEMO_ENDPOINT || '';
-const API_DEMO_KEY = process.env.EXPO_PUBLIC_API_DEMO_KEY || '';
-
 export interface SimulatedTransaction {
   signature: string;
   slot: number;
@@ -185,6 +181,9 @@ export const getSimulatedTransactions = async (
   limit: number = 100,
   offset: number = 0
 ): Promise<SimulatedTransactionsResponse> => {
+  const API_DEMO_ENDPOINT = getPublicEnv('EXPO_PUBLIC_API_DEMO_ENDPOINT');
+  const API_DEMO_KEY = getPublicEnv('EXPO_PUBLIC_API_DEMO_KEY');
+
   if (!API_DEMO_ENDPOINT || !API_DEMO_KEY) {
     throw new Error('API Demo endpoint or key not configured');
   }
