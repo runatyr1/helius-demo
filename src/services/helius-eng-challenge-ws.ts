@@ -21,6 +21,52 @@ export interface TokenTransfersResponse {
   transfers: TokenTransfer[];
 }
 
+export interface TokenTransferStream {
+  close: () => void;
+}
+
+export const openTokenTransferStream = (
+  onTransfers: (transfers: TokenTransfer[]) => void,
+  onError?: (error: Event) => void
+): TokenTransferStream | null => {
+  const ENG_CHALLENGE_ENDPOINT = getPublicEnv('EXPO_PUBLIC_ENG_CHALLENGE_ENDPOINT');
+  const ENG_CHALLENGE_API_KEY = getPublicEnv('EXPO_PUBLIC_ENG_CHALLENGE_API_KEY');
+
+  if (!ENG_CHALLENGE_ENDPOINT || typeof EventSource === 'undefined') {
+    console.log('[SSE] Transfer stream unavailable');
+    return null;
+  }
+
+  let url = `${ENG_CHALLENGE_ENDPOINT}/api/transfers/stream`;
+  if (ENG_CHALLENGE_API_KEY) {
+    url += `?api_key=${encodeURIComponent(ENG_CHALLENGE_API_KEY)}`;
+  }
+
+  const eventSource = new EventSource(url);
+
+  eventSource.addEventListener('open', () => {
+    console.log('[SSE] Transfer stream connected');
+  });
+
+  eventSource.addEventListener('transfers', (event) => {
+    try {
+      const data = JSON.parse((event as MessageEvent).data);
+      if (Array.isArray(data.transfers)) {
+        onTransfers(data.transfers);
+      }
+    } catch (error: any) {
+      console.warn('[SSE] Failed to parse transfer event:', error.message);
+    }
+  });
+
+  eventSource.addEventListener('error', (error) => {
+    console.warn('[SSE] Transfer stream error; polling fallback remains active');
+    onError?.(error);
+  });
+
+  return eventSource;
+};
+
 export const getTokenTransfers = async (
   limit: number = 100,
   offset: number = 0

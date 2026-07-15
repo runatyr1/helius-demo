@@ -15,6 +15,7 @@ import {
 import {
   getTokenTransfers,
   TokenTransfer,
+  openTokenTransferStream,
   sendBonk,
 } from '../services/helius-eng-challenge-ws';
 import { getPublicEnv } from '../config/runtime';
@@ -48,6 +49,7 @@ export default function EngChallengeScreen() {
   const [lastBonkSignature, setLastBonkSignature] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const transferStreamRef = useRef<{ close: () => void } | null>(null);
   const seenSignatures = useRef<Set<string>>(new Set());
   const [monitoringStartTime, setMonitoringStartTime] = useState<Date>(new Date());
 
@@ -61,6 +63,10 @@ export default function EngChallengeScreen() {
   useEffect(() => {
     isMonitoringRef.current = isMonitoring;
   }, [isMonitoring]);
+
+  const getTransferTime = (transfer: TokenTransfer) => {
+    return Date.parse(transfer.block_time || transfer.created_at || '') || 0;
+  };
 
   // Track loading time
   useEffect(() => {
@@ -83,6 +89,38 @@ export default function EngChallengeScreen() {
       }
     }
   }, [isLoading]);
+
+  const addNewTransfers = (incomingTransfers: TokenTransfer[], sourceLabel: string) => {
+    if (incomingTransfers.length === 0) {
+      console.log(`${sourceLabel} No transfers received`);
+      return;
+    }
+
+    const newTransfers = incomingTransfers.filter(
+      (tx) => !seenSignatures.current.has(tx.signature)
+    );
+
+    console.log(`${sourceLabel} Filtered to ${newTransfers.length} new transfers (${incomingTransfers.length - newTransfers.length} duplicates)`);
+
+    if (newTransfers.length === 0) return;
+
+    newTransfers.forEach((tx) => {
+      seenSignatures.current.add(tx.signature);
+    });
+
+    setTransfers((prev) => {
+      return [...newTransfers, ...prev].sort(
+        (a, b) => getTransferTime(b) - getTransferTime(a)
+      );
+    });
+    setTotalFetched((prev) => {
+      const newTotal = prev + newTransfers.length;
+      const elapsed = (Date.now() - monitoringStartTime.getTime()) / 1000;
+      const rate = elapsed > 0 ? newTotal / elapsed : 0;
+      setCurrentRate(rate);
+      return newTotal;
+    });
+  };
 
   const fetchTransfers = async (isManualRefresh = false, currentRetry = 0) => {
     const fetchStartTime = Date.now();
@@ -116,30 +154,7 @@ export default function EngChallengeScreen() {
       console.log(`${attemptLabel} Received ${response.transfers.length} transfers from API`);
 
       const processingStart = Date.now();
-      if (response.transfers.length > 0) {
-        const newTransfers = response.transfers.filter(
-          (tx) => !seenSignatures.current.has(tx.signature)
-        );
-
-        console.log(`${attemptLabel} Filtered to ${newTransfers.length} new transfers (${response.transfers.length - newTransfers.length} duplicates)`);
-
-        if (newTransfers.length > 0) {
-          newTransfers.forEach((tx) => {
-            seenSignatures.current.add(tx.signature);
-          });
-
-          setTransfers((prev) => [...newTransfers, ...prev]);
-          setTotalFetched((prev) => {
-            const newTotal = prev + newTransfers.length;
-            const elapsed = (Date.now() - monitoringStartTime.getTime()) / 1000;
-            const rate = elapsed > 0 ? newTotal / elapsed : 0;
-            setCurrentRate(rate);
-            return newTotal;
-          });
-        }
-      } else {
-        console.log(`${attemptLabel} No transfers received from API`);
-      }
+      addNewTransfers(response.transfers, attemptLabel);
 
       const processingDuration = Date.now() - processingStart;
       const totalDuration = Date.now() - fetchStartTime;
@@ -194,17 +209,47 @@ export default function EngChallengeScreen() {
     }
   };
 
+  const startTransferStream = () => {
+    if (transferStreamRef.current) return;
+
+    transferStreamRef.current = openTokenTransferStream(
+      (streamTransfers) => {
+        if (isPausedRef.current || !isMonitoringRef.current) {
+          console.log('[SSE] Transfer ignored - monitoring paused/stopped');
+          return;
+        }
+
+        addNewTransfers(streamTransfers, '[SSE]');
+        setError(null);
+        setIsLoading(false);
+      },
+      () => {
+        // EventSource reconnects automatically; polling remains the fallback.
+      }
+    );
+  };
+
+  const stopTransferStream = () => {
+    if (transferStreamRef.current) {
+      transferStreamRef.current.close();
+      transferStreamRef.current = null;
+    }
+  };
+
   const startAutoRefresh = (forceInitialFetch = false) => {
     setIsPaused(false);
     isPausedRef.current = false;
+    startTransferStream();
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
 
     fetchTransfers(forceInitialFetch);
-    intervalRef.current = setInterval(() => {
-      fetchTransfers();
-    }, REFRESH_INTERVAL);
+    // SSE-only test mode: keep initial/manual fetch as snapshot fallback, but
+    // disable scheduled polling to verify live feed push behaviour in isolation.
+    // intervalRef.current = setInterval(() => {
+    //   fetchTransfers();
+    // }, REFRESH_INTERVAL);
   };
 
   const stopAutoRefresh = () => {
@@ -214,6 +259,7 @@ export default function EngChallengeScreen() {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+    stopTransferStream();
   };
 
   useEffect(() => {
@@ -230,6 +276,7 @@ export default function EngChallengeScreen() {
       if (loadingTimerRef.current) {
         clearInterval(loadingTimerRef.current);
       }
+      stopTransferStream();
     };
   }, []);
 
