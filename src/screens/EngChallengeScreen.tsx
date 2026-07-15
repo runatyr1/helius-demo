@@ -11,6 +11,7 @@ import {
   Animated,
   Linking,
   TextInput,
+  Modal,
   useWindowDimensions,
 } from 'react-native';
 import {
@@ -49,6 +50,12 @@ export default function EngChallengeScreen() {
   const [isSendingBonk, setIsSendingBonk] = useState(false);
   const [bonkError, setBonkError] = useState<string | null>(null);
   const [lastBonkSignature, setLastBonkSignature] = useState<string | null>(null);
+  const [selectedPipelineStep, setSelectedPipelineStep] = useState<{
+    title: string;
+    detail: string;
+    summary: string;
+    how: string;
+  } | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const transferStreamRef = useRef<{ close: () => void } | null>(null);
@@ -475,6 +482,57 @@ export default function EngChallengeScreen() {
   const statusLabel = !isMonitoring ? 'Stopped' : isPaused ? 'Paused' : 'Live via SSE';
   const statusColor = !isMonitoring ? '#fb7185' : isPaused ? '#fbbf24' : '#34d399';
   const pageHorizontalPadding = screenWidth > 500 ? screenWidth * 0.1 : 14;
+  const pipelineSteps = [
+    {
+      title: 'Send',
+      detail: 'transfer',
+      summary: 'Creates a small Solana test transfer from the backend wallet.',
+      how: 'The UI calls /api/send-bonk. Backend sends the Solana transaction and records the signature for E2E tracking.',
+    },
+    {
+      title: 'WebSocket',
+      detail: 'see tx',
+      summary: 'Detects the matching on-chain transaction quickly.',
+      how: 'The indexer listens to Helius logsSubscribe for the configured token mint and receives the signature when Solana confirms it.',
+    },
+    {
+      title: 'RPC',
+      detail: 'enrich',
+      summary: 'Fetches full transaction data for the signature.',
+      how: 'The indexer calls getTransaction so it can read token balances, accounts, slot, and timestamp context.',
+    },
+    {
+      title: 'Parser',
+      detail: 'normalize',
+      summary: 'Turns raw transaction data into one transfer row.',
+      how: 'Parser compares pre/post token balances and extracts mint, amount, sender, receiver, signature, and slot.',
+    },
+    {
+      title: 'Buffer',
+      detail: 'batch',
+      summary: 'Queues parsed transfers briefly before writing.',
+      how: 'Memory buffer groups transfers by batch size or flush interval to reduce database write overhead.',
+    },
+    {
+      title: 'DB',
+      detail: 'persist',
+      summary: 'Stores the normalized transfer permanently.',
+      how: 'Postgres insert de-duplicates by signature and keeps indexed rows for fast latest-transfer reads.',
+    },
+    {
+      title: 'SSE/API',
+      detail: 'deliver',
+      summary: 'Pushes or serves transfers to the browser.',
+      how: 'SSE streams newly inserted rows live. The API snapshot remains available for initial load and refresh fallback.',
+    },
+    {
+      title: 'UI',
+      detail: 'render',
+      summary: 'Shows the transfer in the live feed.',
+      how: 'The screen dedupes signatures, sorts by time, and renders the newest transfers at the top.',
+    },
+  ];
+  const pipelineColors = ['#0b1220', '#101827', '#132033', '#17253c', '#1a2b45', '#1e314f', '#22375a', '#273d64'];
 
   return (
     <View style={styles.container}>
@@ -498,31 +556,52 @@ export default function EngChallengeScreen() {
         <View style={styles.heroCard}>
           <View style={styles.topRail}>
             <View style={styles.titleCluster}>
-              <Text style={styles.eyebrow}>Solana indexer demo</Text>
-              <Text style={styles.heroTitle}>Live BONK monitor</Text>
-              <Text style={styles.heroSubtitle}>
-                Send one test transfer, watch the feed update through SSE, then verify the backend stages in Grafana.
-              </Text>
+              <Text style={styles.heroTitle}>Web3 Pipeline Demo</Text>
+              <View style={styles.pipelineFlow}>
+                {pipelineSteps.map((step, index) => (
+                  <TouchableOpacity
+                    key={`${step.title}-${step.detail}`}
+                    style={[
+                      styles.pipelineStep,
+                      { backgroundColor: pipelineColors[index] },
+                    ]}
+                    onPress={() => setSelectedPipelineStep(step)}
+                  >
+                    <Text style={styles.pipelineStepTitle}>{index + 1}. {step.title}</Text>
+                    <Text style={styles.pipelineStepDetail}>{step.detail}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
-            <View style={[styles.statusPill, { borderColor: statusColor }]}>
-              <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-              <Text style={[styles.statusPillText, { color: statusColor }]}>{statusLabel}</Text>
-            </View>
-          </View>
+            <View
+              style={[
+                styles.monitorPanel,
+                screenWidth > 500 && styles.monitorPanelWide,
+              ]}
+            >
+              <View style={styles.monitorHeader}>
+                <Text style={styles.sectionKicker}>Monitor</Text>
+                <View style={[styles.statusPill, { borderColor: statusColor }]}>
+                  <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+                  <Text style={[styles.statusPillText, { color: statusColor }]}>{statusLabel}</Text>
+                </View>
+              </View>
 
-          <View style={styles.quickStats}>
-            <View style={styles.metricTile}>
-              <Text style={styles.metricLabel}>Captured</Text>
-              <Text style={styles.metricValue}>{transfers.length}</Text>
-            </View>
-            <View style={styles.metricTile}>
-              <Text style={styles.metricLabel}>Visible</Text>
-              <Text style={styles.metricValue}>{filteredTransfers.length}</Text>
-            </View>
-            <View style={styles.metricTile}>
-              <Text style={styles.metricLabel}>Rate</Text>
-              <Text style={styles.metricValue}>{currentRate.toFixed(2)}/s</Text>
+              <View style={styles.quickStats}>
+                <View style={styles.metricTile}>
+                  <Text style={styles.metricLabel}>Captured</Text>
+                  <Text style={styles.metricValue}>{transfers.length}</Text>
+                </View>
+                <View style={styles.metricTile}>
+                  <Text style={styles.metricLabel}>Visible</Text>
+                  <Text style={styles.metricValue}>{filteredTransfers.length}</Text>
+                </View>
+                <View style={styles.metricTile}>
+                  <Text style={styles.metricLabel}>Rate</Text>
+                  <Text style={styles.metricValue}>{currentRate.toFixed(2)}/s</Text>
+                </View>
+              </View>
             </View>
           </View>
 
@@ -531,7 +610,6 @@ export default function EngChallengeScreen() {
               <View style={styles.sendPanelHeader}>
                 <View>
                   <Text style={styles.sectionKicker}>Test path</Text>
-                  <Text style={styles.sendTitle}>Send BONK</Text>
                 </View>
                 <Text style={styles.sendHint}>Amount auto-steps after send</Text>
               </View>
@@ -545,7 +623,7 @@ export default function EngChallengeScreen() {
                 </TouchableOpacity>
                 <View style={styles.amountReadout}>
                   <Text style={styles.amountText}>{bonkAmount.toFixed(2)}</Text>
-                  <Text style={styles.amountUnit}>BONK</Text>
+                  <Text style={styles.amountUnit}>BONK token</Text>
                 </View>
                 <TouchableOpacity style={styles.amountButtonSmall} onPress={() => adjustBonkAmount(0.01)}>
                   <Text style={styles.amountButtonText}>+.01</Text>
@@ -683,7 +761,7 @@ export default function EngChallengeScreen() {
             <View style={styles.emptyState}>
               <Text style={styles.emptyTitle}>No transfers yet</Text>
               <Text style={styles.emptyText}>
-                Send BONK or wait for the indexer feed to push the next transfer.
+                Send a Solana test transfer or wait for the indexer feed to push the next transfer.
               </Text>
             </View>
           ) : (
@@ -704,6 +782,40 @@ export default function EngChallengeScreen() {
           )}
         </View>
       </ScrollView>
+
+      <Modal
+        visible={selectedPipelineStep !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedPipelineStep(null)}
+      >
+        <TouchableOpacity
+          style={styles.pipelineModalOverlay}
+          activeOpacity={1}
+          onPress={() => setSelectedPipelineStep(null)}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.pipelineModalCard}>
+            {selectedPipelineStep && (
+              <>
+                <Text style={styles.pipelineModalKicker}>Pipeline step</Text>
+                <Text style={styles.pipelineModalTitle}>
+                  {selectedPipelineStep.title} / {selectedPipelineStep.detail}
+                </Text>
+                <Text style={styles.pipelineModalLabel}>What it is</Text>
+                <Text style={styles.pipelineModalText}>{selectedPipelineStep.summary}</Text>
+                <Text style={styles.pipelineModalLabel}>How it works</Text>
+                <Text style={styles.pipelineModalText}>{selectedPipelineStep.how}</Text>
+                <TouchableOpacity
+                  style={styles.pipelineModalButton}
+                  onPress={() => setSelectedPipelineStep(null)}
+                >
+                  <Text style={styles.pipelineModalButtonText}>Close</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -898,15 +1010,16 @@ const styles = StyleSheet.create({
   },
   topRail: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
     gap: 10,
   },
   titleCluster: {
-    flex: 1,
+    flex: 3,
     minWidth: 260,
     gap: 6,
+    justifyContent: 'flex-start',
   },
   eyebrow: {
     color: '#a78bfa',
@@ -927,6 +1040,100 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     fontSize: 13,
     lineHeight: 18,
+  },
+  pipelineFlow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 7,
+    marginTop: 8,
+  },
+  pipelineStep: {
+    width: 74,
+    minHeight: 58,
+    borderColor: '#283548',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pipelineStepTitle: {
+    color: '#f8fafc',
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  pipelineStepDetail: {
+    marginTop: 2,
+    color: '#94a3b8',
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  pipelineModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(7, 8, 18, 0.78)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 18,
+  },
+  pipelineModalCard: {
+    width: '100%',
+    maxWidth: 430,
+    backgroundColor: '#0f172a',
+    borderColor: '#25324a',
+    borderWidth: 1,
+    borderRadius: 24,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.35,
+    shadowRadius: 34,
+  },
+  pipelineModalKicker: {
+    color: '#38bdf8',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+  },
+  pipelineModalTitle: {
+    marginTop: 4,
+    color: '#f8fafc',
+    fontSize: 22,
+    lineHeight: 27,
+    fontWeight: '900',
+  },
+  pipelineModalLabel: {
+    marginTop: 16,
+    marginBottom: 5,
+    color: '#a78bfa',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.9,
+    textTransform: 'uppercase',
+  },
+  pipelineModalText: {
+    color: '#cbd5e1',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  pipelineModalButton: {
+    marginTop: 18,
+    backgroundColor: '#1e293b',
+    borderColor: '#334155',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  pipelineModalButtonText: {
+    color: '#f8fafc',
+    fontSize: 13,
+    fontWeight: '900',
   },
   statusPill: {
     flexDirection: 'row',
@@ -949,31 +1156,55 @@ const styles = StyleSheet.create({
   },
   quickStats: {
     flexDirection: 'row',
+    flexWrap: 'nowrap',
+    gap: 6,
+  },
+  monitorPanel: {
+    flex: 2,
+    minWidth: 260,
+    backgroundColor: '#111827',
+    borderColor: '#283548',
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 12,
+    gap: 10,
+  },
+  monitorPanelWide: {
+    maxWidth: '40%',
+  },
+  monitorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     flexWrap: 'wrap',
     gap: 8,
   },
   metricTile: {
-    minWidth: 104,
-    flexGrow: 1,
-    backgroundColor: '#111827',
+    flex: 1,
+    minWidth: 0,
+    backgroundColor: '#070812',
     borderColor: '#263244',
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 10,
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+    alignItems: 'center',
   },
   metricLabel: {
     color: '#64748b',
-    fontSize: 11,
+    fontSize: 9,
     fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 0.7,
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
   metricValue: {
     marginTop: 2,
     color: '#f8fafc',
-    fontSize: 19,
+    fontSize: 16,
     fontWeight: '900',
     fontFamily: 'monospace',
+    textAlign: 'center',
   },
   actionDeck: {
     flexDirection: 'row',
@@ -981,7 +1212,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sendPanel: {
-    flex: 2,
+    flex: 3,
     minWidth: 300,
     backgroundColor: '#111827',
     borderColor: '#283548',
@@ -991,7 +1222,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   opsPanel: {
-    flex: 1,
+    flex: 2,
     minWidth: 260,
     backgroundColor: '#111827',
     borderColor: '#283548',
