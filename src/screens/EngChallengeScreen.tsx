@@ -22,6 +22,7 @@ import { getPublicEnv } from '../config/runtime';
 const REFRESH_INTERVAL = 2000; // 2 seconds
 const BATCH_SIZE = 100; // Fetch 100 transfers at a time
 const GRAFANA_URL = getPublicEnv('EXPO_PUBLIC_GRAFANA_URL');
+const GRAFANA_E2E_URL = getPublicEnv('EXPO_PUBLIC_GRAFANA_URL2');
 
 const MAX_RETRIES = 5;
 const INITIAL_RETRY_DELAY = 1000; // 1 second
@@ -315,6 +316,14 @@ export default function EngChallengeScreen() {
     }
   };
 
+  const openE2eGrafana = () => {
+    if (GRAFANA_E2E_URL) {
+      Linking.openURL(GRAFANA_E2E_URL);
+    } else {
+      Alert.alert('E2E Grafana URL not configured');
+    }
+  };
+
   const handleSendBonk = async () => {
     setIsSendingBonk(true);
     setBonkError(null);
@@ -447,6 +456,11 @@ export default function EngChallengeScreen() {
           {GRAFANA_URL && (
             <TouchableOpacity onPress={openGrafana} style={styles.grafanaLink}>
               <Text style={styles.grafanaLinkText}>📊 Live backend metrics</Text>
+            </TouchableOpacity>
+          )}
+          {GRAFANA_E2E_URL && (
+            <TouchableOpacity onPress={openE2eGrafana} style={styles.grafanaLink}>
+              <Text style={styles.grafanaLinkText}>📊 Live e2e test metrics</Text>
             </TouchableOpacity>
           )}
         </View>

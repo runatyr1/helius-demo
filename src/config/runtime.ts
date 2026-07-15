@@ -4,7 +4,8 @@ type PublicEnvName =
   | 'EXPO_PUBLIC_API_DEMO_KEY'
   | 'EXPO_PUBLIC_ENG_CHALLENGE_ENDPOINT'
   | 'EXPO_PUBLIC_ENG_CHALLENGE_API_KEY'
-  | 'EXPO_PUBLIC_GRAFANA_URL';
+  | 'EXPO_PUBLIC_GRAFANA_URL'
+  | 'EXPO_PUBLIC_GRAFANA_URL2';
 
 type RuntimeEnv = Partial<Record<PublicEnvName, string>>;
 
@@ -22,6 +23,7 @@ const getBundledEnv = (name: PublicEnvName): string => {
     EXPO_PUBLIC_ENG_CHALLENGE_ENDPOINT: process.env.EXPO_PUBLIC_ENG_CHALLENGE_ENDPOINT,
     EXPO_PUBLIC_ENG_CHALLENGE_API_KEY: process.env.EXPO_PUBLIC_ENG_CHALLENGE_API_KEY,
     EXPO_PUBLIC_GRAFANA_URL: process.env.EXPO_PUBLIC_GRAFANA_URL,
+    EXPO_PUBLIC_GRAFANA_URL2: process.env.EXPO_PUBLIC_GRAFANA_URL2,
   };
 
   return env[name] || '';
