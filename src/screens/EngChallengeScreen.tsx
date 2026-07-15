@@ -11,6 +11,7 @@ import {
   Animated,
   Linking,
   TextInput,
+  useWindowDimensions,
 } from 'react-native';
 import {
   getTokenTransfers,
@@ -29,6 +30,7 @@ const MAX_RETRIES = 5;
 const INITIAL_RETRY_DELAY = 1000; // 1 second
 
 export default function EngChallengeScreen() {
+  const { width: screenWidth } = useWindowDimensions();
   const [transfers, setTransfers] = useState<TokenTransfer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -470,191 +472,237 @@ export default function EngChallengeScreen() {
     );
   }
 
+  const statusLabel = !isMonitoring ? 'Stopped' : isPaused ? 'Paused' : 'Live via SSE';
+  const statusColor = !isMonitoring ? '#fb7185' : isPaused ? '#fbbf24' : '#34d399';
+  const pageHorizontalPadding = screenWidth > 500 ? screenWidth * 0.1 : 14;
+
   return (
     <View style={styles.container}>
-      {/* Header with search, author and Grafana link */}
-      <View style={styles.authorBar}>
-        {/* Left: Search filter */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.compactFilterInput}
-            value={addressFilter}
-            onChangeText={setAddressFilter}
-            placeholder="🔍 Filter address..."
-            placeholderTextColor="#666"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {addressFilter.trim() && (
-            <TouchableOpacity
-              style={styles.compactClearButton}
-              onPress={() => setAddressFilter('')}
-            >
-              <Text style={styles.compactClearButtonText}>✕</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Right: Author and Grafana */}
-        <View style={styles.authorInfoContainer}>
-          <TouchableOpacity onPress={() => Linking.openURL('https://www.linkedin.com/in/pietro-cloud-engineer/')}>
-            <Text style={styles.authorText}>Author: <Text style={styles.authorBold}>Pietro</Text></Text>
-          </TouchableOpacity>
-          {GRAFANA_URL && (
-            <TouchableOpacity onPress={openGrafana} style={styles.grafanaLink}>
-              <Text style={styles.grafanaLinkText}>📊 Live backend metrics</Text>
-            </TouchableOpacity>
-          )}
-          {GRAFANA_E2E_URL && (
-            <TouchableOpacity onPress={openE2eGrafana} style={styles.grafanaLink}>
-              <Text style={styles.grafanaLinkText}>📊 Live e2e test metrics</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Retry Banner */}
-      {isRetrying && (
-        <View style={styles.retryBanner}>
-          <ActivityIndicator size="small" color="#f59e0b" style={styles.retrySpinner} />
-          <Text style={styles.retryBannerText}>
-            Reconnecting... (Attempt {retryCount}/{MAX_RETRIES})
-          </Text>
-        </View>
-      )}
-
-      <View style={styles.statsBar}>
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>Total</Text>
-          <Text style={styles.statValue}>{transfers.length}</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statLabel}>Status</Text>
-          <Text style={[styles.statValue, {
-            color: !isMonitoring ? '#ef4444' : isPaused ? '#f59e0b' : '#10b981'
-          }]}>
-            {!isMonitoring ? 'Stopped' : isPaused ? 'Paused' : 'Live'}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.controlBar}>
-        {isMonitoring ? (
-          <>
-            <TouchableOpacity
-              style={[styles.controlButton, isPaused && styles.controlButtonActive]}
-              onPress={togglePause}
-            >
-              <Text style={styles.controlButtonText}>
-                {isPaused ? '▶️ Resume' : '⏸️ Pause'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.controlButton, styles.stopButton]}
-              onPress={stopMonitoring}
-            >
-              <Text style={styles.controlButtonText}>⏹️ Stop</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <TouchableOpacity
-            style={[styles.controlButton, styles.restartButton]}
-            onPress={restartMonitoring}
-          >
-            <Text style={styles.controlButtonText}>🔄 Restart</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Send BONK Section */}
-      <View style={styles.sendBonkBar}>
-        <TouchableOpacity style={styles.bonkAdjustBtn} onPress={() => adjustBonkAmount(-1)}>
-          <Text style={styles.bonkAdjustText}>-1</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bonkAdjustBtnSmall} onPress={() => adjustBonkAmount(-0.01)}>
-          <Text style={styles.bonkAdjustText}>-.01</Text>
-        </TouchableOpacity>
-        <Text style={styles.bonkAmountText}>{bonkAmount.toFixed(2)}</Text>
-        <TouchableOpacity style={styles.bonkAdjustBtnSmall} onPress={() => adjustBonkAmount(0.01)}>
-          <Text style={styles.bonkAdjustText}>+.01</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.bonkAdjustBtn} onPress={() => adjustBonkAmount(1)}>
-          <Text style={styles.bonkAdjustText}>+1</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.sendBonkButton, isSendingBonk && styles.sendBonkButtonDisabled]}
-          onPress={handleSendBonk}
-          disabled={isSendingBonk}
-        >
-          {isSendingBonk ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.sendBonkButtonText}>Send BONK</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-      {bonkError && (
-        <View style={styles.bonkErrorBar}>
-          <Text style={styles.bonkErrorText}>{bonkError}</Text>
-        </View>
-      )}
-      {lastBonkSignature && (
-        <TouchableOpacity
-          style={styles.bonkSuccessBar}
-          onPress={() => Linking.openURL(`https://solscan.io/tx/${lastBonkSignature}`)}
-        >
-          <Text style={styles.bonkSuccessText}>
-            Sent! {lastBonkSignature.slice(0, 8)}...{lastBonkSignature.slice(-8)}
-          </Text>
-        </TouchableOpacity>
-      )}
-
       <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        style={styles.mainScroll}
+        contentContainerStyle={[
+          styles.pageContent,
+          {
+            paddingLeft: pageHorizontalPadding,
+            paddingRight: pageHorizontalPadding,
+          },
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={handleManualRefresh}
-            tintColor="#6366f1"
+            tintColor="#8b5cf6"
           />
         }
       >
-        {transfers.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🪙</Text>
-            <Text style={styles.emptyTitle}>No Transfers Yet</Text>
-            <Text style={styles.emptyText}>
-              Waiting for token transfers from eng-challenge indexer...
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.txList}>
-            <View style={styles.listHeader}>
-              <Text style={styles.listTitle}>
-                {isMonitoring ? 'Live Token Transfers' : 'Captured Transfers'}
-                {addressFilter.trim() ? ` (${filteredTransfers.length} of ${transfers.length})` : ` (${transfers.length})`}
-              </Text>
-              <Text style={styles.listSubtitle}>
-                {isMonitoring
-                  ? 'New transfers appear at top • Auto-refresh every 2s'
-                  : 'Scroll through captured transfers • Pull down to restart'}
+        <View style={styles.heroCard}>
+          <View style={styles.topRail}>
+            <View style={styles.titleCluster}>
+              <Text style={styles.eyebrow}>Solana indexer demo</Text>
+              <Text style={styles.heroTitle}>Live BONK monitor</Text>
+              <Text style={styles.heroSubtitle}>
+                Send one test transfer, watch the feed update through SSE, then verify the backend stages in Grafana.
               </Text>
             </View>
-            {filteredTransfers.map((transfer, index) => (
-              <TransferCard
-                key={`${transfer.signature}-${index}`}
-                transfer={transfer}
-                index={index}
-                formatTimestamp={formatTimestamp}
-                formatSignature={formatSignature}
-                formatAddress={formatAddress}
-                formatAmount={formatAmount}
-                getMintSymbol={getMintSymbol}
-              />
-            ))}
+
+            <View style={[styles.statusPill, { borderColor: statusColor }]}>
+              <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+              <Text style={[styles.statusPillText, { color: statusColor }]}>{statusLabel}</Text>
+            </View>
+          </View>
+
+          <View style={styles.quickStats}>
+            <View style={styles.metricTile}>
+              <Text style={styles.metricLabel}>Captured</Text>
+              <Text style={styles.metricValue}>{transfers.length}</Text>
+            </View>
+            <View style={styles.metricTile}>
+              <Text style={styles.metricLabel}>Visible</Text>
+              <Text style={styles.metricValue}>{filteredTransfers.length}</Text>
+            </View>
+            <View style={styles.metricTile}>
+              <Text style={styles.metricLabel}>Rate</Text>
+              <Text style={styles.metricValue}>{currentRate.toFixed(2)}/s</Text>
+            </View>
+          </View>
+
+          <View style={styles.actionDeck}>
+            <View style={styles.sendPanel}>
+              <View style={styles.sendPanelHeader}>
+                <View>
+                  <Text style={styles.sectionKicker}>Test path</Text>
+                  <Text style={styles.sendTitle}>Send BONK</Text>
+                </View>
+                <Text style={styles.sendHint}>Amount auto-steps after send</Text>
+              </View>
+
+              <View style={styles.amountRow}>
+                <TouchableOpacity style={styles.amountButton} onPress={() => adjustBonkAmount(-1)}>
+                  <Text style={styles.amountButtonText}>-1</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.amountButtonSmall} onPress={() => adjustBonkAmount(-0.01)}>
+                  <Text style={styles.amountButtonText}>-.01</Text>
+                </TouchableOpacity>
+                <View style={styles.amountReadout}>
+                  <Text style={styles.amountText}>{bonkAmount.toFixed(2)}</Text>
+                  <Text style={styles.amountUnit}>BONK</Text>
+                </View>
+                <TouchableOpacity style={styles.amountButtonSmall} onPress={() => adjustBonkAmount(0.01)}>
+                  <Text style={styles.amountButtonText}>+.01</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.amountButton} onPress={() => adjustBonkAmount(1)}>
+                  <Text style={styles.amountButtonText}>+1</Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.sendBonkButton, isSendingBonk && styles.sendBonkButtonDisabled]}
+                onPress={handleSendBonk}
+                disabled={isSendingBonk}
+              >
+                {isSendingBonk ? (
+                  <ActivityIndicator size="small" color="#070812" />
+                ) : (
+                  <Text style={styles.sendBonkButtonText}>Send test transfer</Text>
+                )}
+              </TouchableOpacity>
+
+              {bonkError && (
+                <View style={styles.bonkErrorBar}>
+                  <Text style={styles.bonkErrorText}>{bonkError}</Text>
+                </View>
+              )}
+              {lastBonkSignature && (
+                <TouchableOpacity
+                  style={styles.bonkSuccessBar}
+                  onPress={() => Linking.openURL(`https://solscan.io/tx/${lastBonkSignature}`)}
+                >
+                  <Text style={styles.bonkSuccessText}>
+                    Sent {lastBonkSignature.slice(0, 8)}...{lastBonkSignature.slice(-8)}. Open Solscan
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={styles.opsPanel}>
+              <Text style={styles.sectionKicker}>Ops</Text>
+              <View style={styles.controlRow}>
+                {isMonitoring ? (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.controlButton, isPaused && styles.controlButtonActive]}
+                      onPress={togglePause}
+                    >
+                      <Text style={styles.controlButtonText}>{isPaused ? 'Resume' : 'Pause'}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.controlButton, styles.stopButton]}
+                      onPress={stopMonitoring}
+                    >
+                      <Text style={styles.controlButtonText}>Stop</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.controlButton, styles.restartButton]}
+                    onPress={restartMonitoring}
+                  >
+                    <Text style={styles.controlButtonText}>Restart</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={styles.linkGrid}>
+                {GRAFANA_URL && (
+                  <TouchableOpacity onPress={openGrafana} style={styles.linkButton}>
+                    <Text style={styles.linkButtonText}>📊 Backend metrics</Text>
+                  </TouchableOpacity>
+                )}
+                {GRAFANA_E2E_URL && (
+                  <TouchableOpacity onPress={openE2eGrafana} style={styles.linkButton}>
+                    <Text style={styles.linkButtonText}>⏱ E2E metrics</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={styles.authorLink}
+                  onPress={() => Linking.openURL('https://www.linkedin.com/in/pietro-cloud-engineer/')}
+                >
+                  <Text style={styles.authorText}>Pietro's Website</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {isRetrying && (
+          <View style={styles.retryBanner}>
+            <ActivityIndicator size="small" color="#fbbf24" style={styles.retrySpinner} />
+            <Text style={styles.retryBannerText}>
+              Reconnecting, attempt {retryCount}/{MAX_RETRIES}
+            </Text>
           </View>
         )}
+
+        <View style={styles.feedPanel}>
+          <View style={styles.feedHeader}>
+            <View style={styles.feedTitleGroup}>
+              <Text style={styles.listTitle}>
+                {isMonitoring ? 'Live transfers' : 'Captured transfers'}
+              </Text>
+              <Text style={styles.listSubtitle}>
+                {addressFilter.trim()
+                  ? `${filteredTransfers.length} matching ${transfers.length} total`
+                  : isMonitoring
+                    ? 'Newest rows stream in at top through SSE. Pull to snapshot-refresh.'
+                    : 'Monitoring stopped. Pull down or restart to resume.'}
+              </Text>
+            </View>
+
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={styles.compactFilterInput}
+                value={addressFilter}
+                onChangeText={setAddressFilter}
+                placeholder="Filter address"
+                placeholderTextColor="#64748b"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {addressFilter.trim() && (
+                <TouchableOpacity
+                  style={styles.compactClearButton}
+                  onPress={() => setAddressFilter('')}
+                >
+                  <Text style={styles.compactClearButtonText}>x</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {transfers.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>No transfers yet</Text>
+              <Text style={styles.emptyText}>
+                Send BONK or wait for the indexer feed to push the next transfer.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.txList}>
+              {filteredTransfers.map((transfer, index) => (
+                <TransferCard
+                  key={`${transfer.signature}-${index}`}
+                  transfer={transfer}
+                  index={index}
+                  formatTimestamp={formatTimestamp}
+                  formatSignature={formatSignature}
+                  formatAddress={formatAddress}
+                  formatAmount={formatAmount}
+                  getMintSymbol={getMintSymbol}
+                />
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -710,31 +758,38 @@ const TransferCard = React.memo(({ transfer, index, formatTimestamp, formatSigna
         <Text style={styles.txTime}>{formatTimestamp(transfer.created_at)}</Text>
       </View>
 
+      <View style={styles.txAmountRow}>
+        <Text style={styles.txAmount}>{formatAmount(transfer.amount, transfer.decimals)}</Text>
+        <TouchableOpacity
+          onPress={() => Linking.openURL('https://coinmarketcap.com/currencies/bonk/')}
+          style={styles.tokenLink}
+        >
+          <Text style={styles.tokenLinkText}>{tokenSymbol}</Text>
+        </TouchableOpacity>
+      </View>
+
       <TouchableOpacity
         onPress={() => Linking.openURL(`https://solscan.io/tx/${transfer.signature}`)}
         style={styles.txSignatureMain}
       >
-        <Text style={styles.txSignatureText}>
-          {formatSignature(transfer.signature)} 🔗
-        </Text>
+        <Text style={styles.txSignatureText}>{formatSignature(transfer.signature)}</Text>
       </TouchableOpacity>
 
-      <View style={styles.txTransfer}>
-        <Text style={styles.txAddress}>From: {formatAddress(transfer.from_address)}</Text>
-        <Text style={styles.txAmount}>
-          {formatAmount(transfer.amount, transfer.decimals)}{' '}
-          <TouchableOpacity
-            onPress={() => Linking.openURL('https://coinmarketcap.com/currencies/bonk/')}
-            style={styles.tokenLinkInline}
-          >
-            <Text style={styles.tokenLink}>{tokenSymbol}</Text>
-          </TouchableOpacity>
-        </Text>
-        <Text style={styles.txAddress}>To: {formatAddress(transfer.to_address)}</Text>
+      <View style={styles.txRoute}>
+        <View style={styles.txAddressBlock}>
+          <Text style={styles.txAddressLabel}>From</Text>
+          <Text style={styles.txAddress}>{formatAddress(transfer.from_address)}</Text>
+        </View>
+        <Text style={styles.txArrow}>{'->'}</Text>
+        <View style={styles.txAddressBlock}>
+          <Text style={styles.txAddressLabel}>To</Text>
+          <Text style={styles.txAddress}>{formatAddress(transfer.to_address)}</Text>
+        </View>
       </View>
 
       <View style={styles.txMeta}>
-        <Text style={styles.txMetaItem}>Slot: {transfer.slot.toLocaleString()}</Text>
+        <Text style={styles.txMetaItem}>Slot {transfer.slot.toLocaleString()}</Text>
+        <Text style={styles.txMetaItem}>Solscan</Text>
       </View>
     </Animated.View>
   );
@@ -743,55 +798,55 @@ const TransferCard = React.memo(({ transfer, index, formatTimestamp, formatSigna
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#070812',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#070812',
     padding: 32,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#b0b0b0',
-    fontWeight: '600',
+    color: '#cbd5e1',
+    fontWeight: '700',
   },
   loadingElapsed: {
     marginTop: 8,
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#6366f1',
+    color: '#a78bfa',
     fontFamily: 'monospace',
   },
   slowLoadingWarning: {
     marginTop: 12,
     fontSize: 14,
-    color: '#f59e0b',
-    fontWeight: '600',
+    color: '#fbbf24',
+    fontWeight: '700',
   },
   loadingHint: {
     marginTop: 16,
     fontSize: 12,
-    color: '#666',
+    color: '#64748b',
     fontStyle: 'italic',
   },
   retrySubtext: {
     marginTop: 8,
     fontSize: 14,
-    color: '#808080',
+    color: '#94a3b8',
   },
   retryingTitle: {
     marginTop: 16,
     fontSize: 20,
-    fontWeight: '600',
-    color: '#f59e0b',
+    fontWeight: '700',
+    color: '#fbbf24',
     marginBottom: 8,
   },
   retryingText: {
     fontSize: 16,
-    color: '#f59e0b',
+    color: '#fbbf24',
     marginBottom: 8,
   },
   errorIcon: {
@@ -800,355 +855,564 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#ef4444',
+    fontWeight: '700',
+    color: '#fb7185',
     marginBottom: 8,
   },
   errorText: {
     fontSize: 14,
-    color: '#b0b0b0',
+    color: '#cbd5e1',
     textAlign: 'center',
     marginBottom: 24,
   },
   retryButton: {
-    backgroundColor: '#6366f1',
+    backgroundColor: '#8b5cf6',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 999,
   },
   retryButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  authorBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#2d2d2d',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#404040',
+  mainScroll: {
+    flex: 1,
+  },
+  pageContent: {
+    width: '100%',
+    paddingVertical: 14,
     gap: 12,
   },
-  searchContainer: {
-    flex: 1,
-    maxWidth: 300,
-    position: 'relative',
-  },
-  compactFilterInput: {
-    backgroundColor: '#1a1a1a',
+  heroCard: {
+    backgroundColor: '#0f172a',
+    borderColor: '#25324a',
     borderWidth: 1,
-    borderColor: '#404040',
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    fontSize: 12,
-    color: '#f5f5f5',
-    fontFamily: 'monospace',
+    borderRadius: 24,
+    padding: 14,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.28,
+    shadowRadius: 32,
   },
-  compactClearButton: {
-    position: 'absolute',
-    right: 6,
-    top: '50%',
-    transform: [{ translateY: -12 }],
-    backgroundColor: '#404040',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+  topRail: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 10,
   },
-  compactClearButtonText: {
-    color: '#a0a0a0',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  authorInfoContainer: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
+  titleCluster: {
+    flex: 1,
+    minWidth: 260,
     gap: 6,
   },
-  authorText: {
-    fontSize: 12,
-    color: '#a0a0a0',
+  eyebrow: {
+    color: '#a78bfa',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
   },
-  authorBold: {
-    fontWeight: 'bold',
+  heroTitle: {
+    color: '#f8fafc',
+    fontSize: 29,
+    lineHeight: 33,
+    fontWeight: '900',
+    letterSpacing: -1,
+  },
+  heroSubtitle: {
+    maxWidth: 560,
+    color: '#94a3b8',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    backgroundColor: '#111827',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusPillText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  quickStats: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  metricTile: {
+    minWidth: 104,
+    flexGrow: 1,
+    backgroundColor: '#111827',
+    borderColor: '#263244',
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 10,
+  },
+  metricLabel: {
+    color: '#64748b',
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
+  metricValue: {
+    marginTop: 2,
+    color: '#f8fafc',
+    fontSize: 19,
+    fontWeight: '900',
+    fontFamily: 'monospace',
+  },
+  actionDeck: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  sendPanel: {
+    flex: 2,
+    minWidth: 300,
+    backgroundColor: '#111827',
+    borderColor: '#283548',
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 12,
+    gap: 10,
+  },
+  opsPanel: {
+    flex: 1,
+    minWidth: 260,
+    backgroundColor: '#111827',
+    borderColor: '#283548',
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 12,
+    gap: 10,
+  },
+  sendPanelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  sectionKicker: {
+    color: '#38bdf8',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+  },
+  sendTitle: {
+    marginTop: 2,
+    color: '#f8fafc',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  sendHint: {
+    color: '#64748b',
+    fontSize: 10,
+    textAlign: 'right',
+  },
+  amountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 7,
+  },
+  amountButton: {
+    backgroundColor: '#1e293b',
+    borderColor: '#334155',
+    borderWidth: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 13,
+  },
+  amountButtonSmall: {
+    backgroundColor: '#172033',
+    borderColor: '#2c3a50',
+    borderWidth: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 9,
+    borderRadius: 13,
+  },
+  amountButtonText: {
+    color: '#cbd5e1',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  amountReadout: {
+    minWidth: 104,
+    flexGrow: 1,
+    backgroundColor: '#070812',
+    borderColor: '#334155',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    alignItems: 'center',
+  },
+  amountText: {
+    color: '#f8fafc',
+    fontSize: 22,
+    lineHeight: 26,
+    fontWeight: '900',
+    fontFamily: 'monospace',
+    textAlign: 'center',
+  },
+  amountUnit: {
+    color: '#94a3b8',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    textAlign: 'center',
+  },
+  sendBonkButton: {
+    backgroundColor: '#facc15',
+    borderRadius: 14,
+    paddingVertical: 11,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+  },
+  sendBonkButtonDisabled: {
+    backgroundColor: '#475569',
+  },
+  sendBonkButtonText: {
+    color: '#070812',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  bonkErrorBar: {
+    backgroundColor: '#3f1220',
+    borderColor: '#fb7185',
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 10,
+  },
+  bonkErrorText: {
+    color: '#fecdd3',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  bonkSuccessBar: {
+    backgroundColor: '#052e2b',
+    borderColor: '#2dd4bf',
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 10,
+  },
+  bonkSuccessText: {
+    color: '#ccfbf1',
+    fontSize: 12,
+    textAlign: 'center',
+    fontFamily: 'monospace',
+  },
+  controlRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  controlButton: {
+    flex: 1,
+    minWidth: 96,
+    backgroundColor: '#1e293b',
+    borderColor: '#334155',
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  controlButtonActive: {
+    backgroundColor: '#064e3b',
+    borderColor: '#10b981',
+  },
+  stopButton: {
+    backgroundColor: '#3f1220',
+    borderColor: '#fb7185',
+  },
+  restartButton: {
+    backgroundColor: '#064e3b',
+    borderColor: '#10b981',
+  },
+  controlButtonText: {
+    color: '#f8fafc',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  linkGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  linkButton: {
+    flexGrow: 1,
+    minWidth: 116,
+    backgroundColor: '#1e293b',
+    borderColor: '#334155',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  linkButtonText: {
+    color: '#f8fafc',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  authorLink: {
+    flexGrow: 1,
+    minWidth: 96,
+    backgroundColor: '#1e293b',
+    borderColor: '#334155',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  authorText: {
+    color: '#f8fafc',
+    fontSize: 12,
+    fontWeight: '800',
   },
   retryBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f59e0b',
-    paddingVertical: 8,
+    backgroundColor: '#2f250b',
+    borderColor: '#fbbf24',
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingVertical: 10,
     paddingHorizontal: 16,
   },
   retrySpinner: {
     marginRight: 8,
   },
   retryBannerText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#fff',
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#fde68a',
   },
-  grafanaLink: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    backgroundColor: '#6366f1',
-    borderRadius: 4,
+  feedPanel: {
+    backgroundColor: '#0f172a',
+    borderColor: '#25324a',
+    borderWidth: 1,
+    borderRadius: 28,
+    padding: 14,
+    gap: 12,
   },
-  grafanaLinkText: {
-    fontSize: 11,
-    color: '#fff',
-    fontWeight: '600',
-  },
-  statsBar: {
+  feedHeader: {
     flexDirection: 'row',
-    backgroundColor: '#2d2d2d',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#404040',
-    justifyContent: 'space-around',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  feedTitleGroup: {
+    flex: 1,
+    minWidth: 260,
+  },
+  listTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#f8fafc',
+    marginBottom: 3,
+  },
+  listSubtitle: {
+    fontSize: 12,
+    color: '#94a3b8',
+  },
+  searchContainer: {
+    minWidth: 220,
+    maxWidth: 340,
+    flexGrow: 1,
+    position: 'relative',
+  },
+  compactFilterInput: {
+    backgroundColor: '#070812',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    paddingRight: 40,
+    fontSize: 13,
+    color: '#f8fafc',
+    fontFamily: 'monospace',
+  },
+  compactClearButton: {
+    position: 'absolute',
+    right: 10,
+    top: 9,
+    backgroundColor: '#1e293b',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statLabel: {
-    fontSize: 10,
-    color: '#808080',
-    marginBottom: 2,
-  },
-  statValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#f5f5f5',
-  },
-  controlBar: {
-    flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
-    padding: 12,
-    gap: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#404040',
-  },
-  controlButton: {
-    flex: 1,
-    backgroundColor: '#6366f1',
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  controlButtonActive: {
-    backgroundColor: '#10b981',
-  },
-  stopButton: {
-    backgroundColor: '#ef4444',
-  },
-  restartButton: {
-    backgroundColor: '#10b981',
-  },
-  controlButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
+  compactClearButtonText: {
+    color: '#cbd5e1',
+    fontSize: 12,
+    fontWeight: '900',
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 64,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
+    paddingVertical: 58,
+    backgroundColor: '#0b1220',
+    borderColor: '#25324a',
+    borderWidth: 1,
+    borderRadius: 22,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#f5f5f5',
+    fontWeight: '900',
+    color: '#f8fafc',
     marginBottom: 8,
   },
   emptyText: {
+    maxWidth: 420,
     fontSize: 14,
-    color: '#808080',
+    color: '#94a3b8',
     textAlign: 'center',
     paddingHorizontal: 32,
   },
   txList: {
-    paddingBottom: 16,
-  },
-  listHeader: {
-    marginBottom: 16,
-  },
-  listTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#f5f5f5',
-    marginBottom: 4,
-  },
-  listSubtitle: {
-    fontSize: 12,
-    color: '#808080',
+    gap: 10,
   },
   txCard: {
-    backgroundColor: '#2d2d2d',
+    backgroundColor: '#101827',
     padding: 14,
-    borderRadius: 10,
-    marginBottom: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: '#10b981',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#263244',
   },
   txHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
+    gap: 10,
   },
   txBadge: {
     paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 10,
-    backgroundColor: '#6366f1',
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: '#24194f',
+    borderColor: '#6d5dfc',
+    borderWidth: 1,
   },
   txBadgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '600',
+    color: '#ddd6fe',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.8,
   },
   txTime: {
     fontSize: 11,
-    color: '#808080',
-  },
-  txSignatureMain: {
-    marginBottom: 10,
-    paddingVertical: 8,
-  },
-  txSignatureText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#a5b4fc',
+    color: '#64748b',
     fontFamily: 'monospace',
-    letterSpacing: 0.5,
   },
-  txTransfer: {
-    marginBottom: 10,
-    paddingVertical: 8,
-    backgroundColor: '#252525',
-    borderRadius: 6,
-    paddingHorizontal: 12,
-  },
-  txAddress: {
-    fontSize: 11,
-    color: '#b0b0b0',
-    fontFamily: 'monospace',
-    marginBottom: 4,
+  txAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    marginBottom: 8,
   },
   txAmount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#10b981',
+    fontSize: 21,
+    fontWeight: '900',
+    color: '#34d399',
     fontFamily: 'monospace',
-    textAlign: 'center',
-    marginVertical: 6,
+  },
+  tokenLink: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: '#062c27',
+    borderColor: '#14b8a6',
+    borderWidth: 1,
+  },
+  tokenLinkText: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#99f6e4',
+  },
+  txSignatureMain: {
+    alignSelf: 'flex-start',
+    marginBottom: 10,
+  },
+  txSignatureText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#a5b4fc',
+    fontFamily: 'monospace',
+    letterSpacing: 0.2,
+  },
+  txRoute: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  txAddressBlock: {
+    flex: 1,
+    minWidth: 110,
+    backgroundColor: '#0b1220',
+    borderRadius: 14,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+  },
+  txAddressLabel: {
+    color: '#64748b',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  txAddress: {
+    marginTop: 3,
+    fontSize: 12,
+    color: '#cbd5e1',
+    fontFamily: 'monospace',
+    fontWeight: '800',
+  },
+  txArrow: {
+    color: '#475569',
+    fontSize: 14,
+    fontWeight: '900',
   },
   txMeta: {
     borderTopWidth: 1,
-    borderTopColor: '#404040',
-    paddingTop: 8,
+    borderTopColor: '#25324a',
+    paddingTop: 9,
     flexDirection: 'row',
+    justifyContent: 'space-between',
     flexWrap: 'wrap',
     gap: 8,
   },
   txMetaItem: {
     fontSize: 10,
-    color: '#808080',
-    marginRight: 8,
-  },
-  tokenLinkInline: {
-    display: 'inline-block' as any,
-  },
-  tokenLink: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6366f1',
-    textDecorationLine: 'underline',
-  },
-  // Send BONK styles
-  sendBonkBar: {
-    flexDirection: 'row',
-    backgroundColor: '#252525',
-    padding: 8,
-    gap: 6,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#404040',
-  },
-  bonkAdjustBtn: {
-    backgroundColor: '#404040',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
-  bonkAdjustBtnSmall: {
-    backgroundColor: '#353535',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-  },
-  bonkAdjustText: {
-    color: '#e0e0e0',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  bonkAmountText: {
-    color: '#f5f5f5',
-    fontSize: 18,
-    fontWeight: 'bold',
+    color: '#64748b',
     fontFamily: 'monospace',
-    minWidth: 60,
-    textAlign: 'center',
-  },
-  sendBonkButton: {
-    backgroundColor: '#f59e0b',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginLeft: 'auto',
-  },
-  sendBonkButtonDisabled: {
-    backgroundColor: '#666',
-  },
-  sendBonkButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  bonkErrorBar: {
-    backgroundColor: '#ef4444',
-    padding: 8,
-  },
-  bonkErrorText: {
-    color: '#fff',
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  bonkSuccessBar: {
-    backgroundColor: '#10b981',
-    padding: 8,
-  },
-  bonkSuccessText: {
-    color: '#fff',
-    fontSize: 12,
-    textAlign: 'center',
-    fontFamily: 'monospace',
+    fontWeight: '800',
   },
 });

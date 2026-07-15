@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { BalanceUpdate } from '../types';
 import { lamportsToSol } from '../services/helius';
 
@@ -35,7 +35,7 @@ export default function BalanceHistory({ updates }: BalanceHistoryProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Balance History</Text>
-      <ScrollView style={styles.scrollView}>
+      <View style={styles.updateList}>
         {updates
           .slice()
           .reverse()
@@ -56,33 +56,34 @@ export default function BalanceHistory({ updates }: BalanceHistoryProps) {
               <Text style={styles.lamports}>{update.lamports.toLocaleString()} lamports</Text>
             </View>
           ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    backgroundColor: '#0f172a',
+    borderColor: '#25324a',
+    borderWidth: 1,
+    borderRadius: 24,
+    padding: 14,
+    gap: 12,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#e0e0e0',
-    marginBottom: 12,
-    paddingHorizontal: 16,
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#f8fafc',
   },
-  scrollView: {
-    flex: 1,
+  updateList: {
+    gap: 10,
   },
   updateItem: {
-    backgroundColor: '#2d2d2d',
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: '#818cf8',
+    backgroundColor: '#101827',
+    borderColor: '#263244',
+    borderWidth: 1,
+    padding: 14,
+    borderRadius: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.3,
@@ -94,15 +95,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+    gap: 8,
   },
   updateTime: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '800',
     color: '#a5b4fc',
+    fontFamily: 'monospace',
   },
   updateSlot: {
-    fontSize: 12,
-    color: '#808080',
+    fontSize: 11,
+    color: '#64748b',
+    fontFamily: 'monospace',
   },
   balanceRow: {
     flexDirection: 'row',
@@ -110,34 +114,40 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   balanceLabel: {
-    fontSize: 14,
-    color: '#b0b0b0',
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: '900',
     marginRight: 8,
   },
   balanceValue: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#f5f5f5',
+    fontWeight: '900',
+    color: '#f8fafc',
+    fontFamily: 'monospace',
   },
   lamports: {
     fontSize: 12,
-    color: '#808080',
+    color: '#64748b',
+    fontFamily: 'monospace',
   },
   emptyContainer: {
-    flex: 1,
+    backgroundColor: '#0f172a',
+    borderColor: '#25324a',
+    borderWidth: 1,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#808080',
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#f8fafc',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#666',
+    color: '#94a3b8',
     textAlign: 'center',
   },
 });

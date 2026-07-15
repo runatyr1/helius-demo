@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { PublicKey } from '@solana/web3.js';
 import {
@@ -20,6 +22,7 @@ import { BalanceUpdate } from '../types';
 import BalanceHistory from '../components/BalanceHistory';
 
 export default function LiveBalanceScreen() {
+  const { width: screenWidth } = useWindowDimensions();
   const [address, setAddress] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
@@ -288,11 +291,11 @@ export default function LiveBalanceScreen() {
   const getStatusColor = () => {
     switch (connectionStatus) {
       case 'connected':
-        return '#10b981';
+        return '#34d399';
       case 'connecting':
-        return '#f59e0b';
+        return '#fbbf24';
       case 'disconnected':
-        return '#ef4444';
+        return '#fb7185';
     }
   };
 
@@ -307,51 +310,69 @@ export default function LiveBalanceScreen() {
     }
   };
 
+  const pageHorizontalPadding = screenWidth > 500 ? screenWidth * 0.1 : 14;
+
   return (
-    <View style={styles.container}>
-      <View style={styles.inputSection}>
-        <Text style={styles.label}>Solana Wallet Address</Text>
-        <Text style={styles.description}>
-          Demonstrates fast WebSocket connectivity with real-time balance updates
-        </Text>
-        <TextInput
-          style={styles.input}
-          value={address}
-          onChangeText={setAddress}
-          placeholder="Enter wallet address (e.g., 7xKXtg...)"
-          placeholderTextColor="#666"
-          autoCapitalize="none"
-          autoCorrect={false}
-          editable={!isStreaming}
-        />
-
-        {!isStreaming ? (
-          <TouchableOpacity
-            style={[styles.button, isLoading && styles.buttonDisabled]}
-            onPress={handleStartStreaming}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Start Streaming</Text>
-            )}
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.button, styles.buttonStop]}
-            onPress={handleStopStreaming}
-          >
-            <Text style={styles.buttonText}>Stop Streaming</Text>
-          </TouchableOpacity>
-        )}
-
-        {isStreaming && (
-          <View style={styles.statusContainer}>
-            <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
-            <Text style={styles.statusText}>{getStatusText()}</Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.pageContent,
+        {
+          paddingLeft: pageHorizontalPadding,
+          paddingRight: pageHorizontalPadding,
+        },
+      ]}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.heroCard}>
+        <View style={styles.heroHeader}>
+          <View style={styles.titleCluster}>
+            <Text style={styles.eyebrow}>Wallet stream demo</Text>
+            <Text style={styles.heroTitle}>Live balance monitor</Text>
+            <Text style={styles.description}>
+              Subscribe to a Solana account and watch balance notifications arrive through WebSocket.
+            </Text>
           </View>
-        )}
+          <View style={[styles.statusPill, { borderColor: getStatusColor() }]}>
+            <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
+            <Text style={[styles.statusText, { color: getStatusColor() }]}>{getStatusText()}</Text>
+          </View>
+        </View>
+
+        <View style={styles.inputCard}>
+          <Text style={styles.label}>Solana Wallet Address</Text>
+          <TextInput
+            style={styles.input}
+            value={address}
+            onChangeText={setAddress}
+            placeholder="Enter wallet address (e.g., 7xKXtg...)"
+            placeholderTextColor="#64748b"
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!isStreaming}
+          />
+
+          {!isStreaming ? (
+            <TouchableOpacity
+              style={[styles.button, isLoading && styles.buttonDisabled]}
+              onPress={handleStartStreaming}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#070812" />
+              ) : (
+                <Text style={styles.buttonText}>Start streaming</Text>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.button, styles.buttonStop]}
+              onPress={handleStopStreaming}
+            >
+              <Text style={styles.buttonTextStop}>Stop streaming</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {currentBalance !== null && (
@@ -367,81 +388,140 @@ export default function LiveBalanceScreen() {
       )}
 
       <BalanceHistory updates={balanceUpdates} />
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#070812',
   },
-  inputSection: {
-    backgroundColor: '#2d2d2d',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#404040',
+  pageContent: {
+    paddingVertical: 14,
+    gap: 12,
+  },
+  heroCard: {
+    backgroundColor: '#0f172a',
+    borderColor: '#25324a',
+    borderWidth: 1,
+    borderRadius: 24,
+    padding: 14,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.28,
+    shadowRadius: 32,
+  },
+  heroHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  titleCluster: {
+    flex: 1,
+    minWidth: 260,
+    gap: 6,
+  },
+  eyebrow: {
+    color: '#a78bfa',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  },
+  heroTitle: {
+    color: '#f8fafc',
+    fontSize: 29,
+    lineHeight: 33,
+    fontWeight: '900',
+    letterSpacing: -1,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#e0e0e0',
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#38bdf8',
     marginBottom: 8,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
   },
   description: {
-    fontSize: 12,
-    color: '#a0a0a0',
-    marginBottom: 12,
-    fontStyle: 'italic',
+    maxWidth: 560,
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#94a3b8',
+  },
+  inputCard: {
+    backgroundColor: '#111827',
+    borderColor: '#283548',
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 12,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#404040',
-    borderRadius: 8,
-    padding: 12,
+    borderColor: '#334155',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     fontSize: 14,
-    color: '#f5f5f5',
-    backgroundColor: '#1a1a1a',
+    color: '#f8fafc',
+    backgroundColor: '#070812',
     marginBottom: 12,
+    fontFamily: 'monospace',
   },
   button: {
-    backgroundColor: '#4f46e5',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: '#facc15',
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 14,
     alignItems: 'center',
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonStop: {
-    backgroundColor: '#ef4444',
+    backgroundColor: '#3f1220',
+    borderColor: '#fb7185',
+    borderWidth: 1,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#070812',
+    fontSize: 14,
+    fontWeight: '900',
   },
-  statusContainer: {
+  buttonTextStop: {
+    color: '#fecdd3',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
-    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    backgroundColor: '#111827',
   },
   statusDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 8,
   },
   statusText: {
-    fontSize: 14,
-    color: '#b0b0b0',
+    fontSize: 12,
+    fontWeight: '800',
   },
   balanceCard: {
-    backgroundColor: '#2d2d2d',
-    margin: 16,
-    padding: 20,
-    borderRadius: 12,
+    backgroundColor: '#0f172a',
+    borderColor: '#25324a',
+    borderWidth: 1,
+    padding: 18,
+    borderRadius: 24,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -450,18 +530,24 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   balanceLabel: {
-    fontSize: 14,
-    color: '#b0b0b0',
+    fontSize: 11,
+    color: '#64748b',
+    fontWeight: '900',
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
     marginBottom: 8,
   },
   balanceAmount: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#818cf8',
+    fontSize: 30,
+    fontWeight: '900',
+    color: '#34d399',
     marginBottom: 4,
+    fontFamily: 'monospace',
+    textAlign: 'center',
   },
   balanceLamports: {
     fontSize: 12,
-    color: '#808080',
+    color: '#64748b',
+    fontFamily: 'monospace',
   },
 });

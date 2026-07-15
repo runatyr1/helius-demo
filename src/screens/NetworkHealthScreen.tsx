@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
+  useWindowDimensions,
 } from 'react-native';
 import {
   getNetworkHealth,
@@ -19,6 +20,7 @@ import {
 } from '../services/helius';
 
 export default function NetworkHealthScreen() {
+  const { width: screenWidth } = useWindowDimensions();
   const [health, setHealth] = useState<string>('');
   const [blockHeight, setBlockHeight] = useState<number>(0);
   const [epochInfo, setEpochInfo] = useState<EpochInfo | null>(null);
@@ -100,10 +102,13 @@ export default function NetworkHealthScreen() {
     });
   };
 
+  const pageHorizontalPadding = screenWidth > 500 ? screenWidth * 0.1 : 14;
+  const healthColor = health === 'ok' ? '#34d399' : '#fb7185';
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6366f1" />
+        <ActivityIndicator size="large" color="#8b5cf6" />
         <Text style={styles.loadingText}>Loading network data...</Text>
       </View>
     );
@@ -112,31 +117,50 @@ export default function NetworkHealthScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[
+        styles.scrollContent,
+        {
+          paddingLeft: pageHorizontalPadding,
+          paddingRight: pageHorizontalPadding,
+        },
+      ]}
       refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+        <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#8b5cf6" />
       }
     >
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Solana Network Status!</Text>
-          <View style={[styles.statusBadge, { backgroundColor: health === 'ok' ? '#10b981' : '#ef4444' }]}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusText}>{health === 'ok' ? 'Healthy' : 'Degraded'}</Text>
+          <View style={styles.titleCluster}>
+            <Text style={styles.eyebrow}>Solana RPC monitor</Text>
+            <Text style={styles.headerTitle}>Network health</Text>
+            <Text style={styles.headerSubtitle}>Live cluster health, epoch progress, version, and recent TPS samples.</Text>
+          </View>
+          <View style={[styles.statusBadge, { borderColor: healthColor }]}> 
+            <View style={[styles.statusDot, { backgroundColor: healthColor }]} />
+            <Text style={[styles.statusText, { color: healthColor }]}>{health === 'ok' ? 'Healthy' : 'Degraded'}</Text>
           </View>
         </View>
-        <Text style={styles.lastUpdate}>Last updated: {formatTime(lastUpdate)}</Text>
-        <Text style={styles.autoRefresh}>Auto-refreshes every 5s</Text>
+        <View style={styles.headerMetaRow}>
+          <Text style={styles.lastUpdate}>Last updated {formatTime(lastUpdate)}</Text>
+          <Text style={styles.autoRefresh}>Auto-refresh 5s</Text>
+        </View>
       </View>
 
-      {/* Block Height Card */}
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>Current Block Height</Text>
-        <Text style={styles.cardValueLarge}>{formatNumber(blockHeight)}</Text>
+      <View style={styles.cardGrid}>
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Current Block Height</Text>
+          <Text style={styles.cardValueLarge}>{formatNumber(blockHeight)}</Text>
+        </View>
+
+        {version && (
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Solana Version</Text>
+            <Text style={styles.cardValue}>{version['solana-core']}</Text>
+            <Text style={styles.cardSubtext}>Feature Set {version['feature-set']}</Text>
+          </View>
+        )}
       </View>
 
-      {/* Epoch Info Card */}
       {epochInfo && (
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Epoch Progress</Text>
@@ -164,16 +188,6 @@ export default function NetworkHealthScreen() {
         </View>
       )}
 
-      {/* Version Card */}
-      {version && (
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Solana Version</Text>
-          <Text style={styles.cardValue}>{version['solana-core']}</Text>
-          <Text style={styles.cardSubtext}>Feature Set: {version['feature-set']}</Text>
-        </View>
-      )}
-
-      {/* Performance Chart */}
       {performanceSamples.length > 0 && (
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Recent Performance (TPS)</Text>
@@ -193,7 +207,7 @@ export default function NetworkHealthScreen() {
                         styles.bar,
                         {
                           height: `${Math.max(heightPercent, 5)}%`,
-                          backgroundColor: tps > maxTPS * 0.7 ? '#10b981' : tps > maxTPS * 0.4 ? '#f59e0b' : '#6366f1',
+                          backgroundColor: tps > maxTPS * 0.7 ? '#34d399' : tps > maxTPS * 0.4 ? '#fbbf24' : '#8b5cf6',
                         },
                       ]}
                     />
@@ -224,7 +238,7 @@ export default function NetworkHealthScreen() {
               </Text>
             </View>
             <View style={styles.stat}>
-              <Text style={styles.statLabel}>Samplesss</Text>
+              <Text style={styles.statLabel}>Samples</Text>
               <Text style={styles.statValue}>{performanceSamples.length}</Text>
             </View>
           </View>
@@ -237,104 +251,147 @@ export default function NetworkHealthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#070812',
   },
   scrollContent: {
-    padding: 16,
+    paddingVertical: 14,
+    gap: 12,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#070812',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#b0b0b0',
+    color: '#cbd5e1',
+    fontWeight: '700',
   },
   header: {
-    backgroundColor: '#2d2d2d',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: '#0f172a',
+    borderColor: '#25324a',
+    borderWidth: 1,
+    padding: 14,
+    borderRadius: 24,
+    gap: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.28,
+    shadowRadius: 32,
     elevation: 3,
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  titleCluster: {
+    flex: 1,
+    minWidth: 260,
+    gap: 6,
+  },
+  eyebrow: {
+    color: '#a78bfa',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#f5f5f5',
+    fontSize: 29,
+    lineHeight: 33,
+    fontWeight: '900',
+    color: '#f8fafc',
+    letterSpacing: -1,
+  },
+  headerSubtitle: {
+    maxWidth: 560,
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#94a3b8',
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    gap: 8,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: '#111827',
   },
   statusDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#2d2d2d',
-    marginRight: 6,
   },
   statusText: {
-    color: '#fff',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '800',
+  },
+  headerMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   lastUpdate: {
     fontSize: 12,
-    color: '#808080',
-    marginTop: 4,
+    color: '#94a3b8',
+    fontWeight: '800',
   },
   autoRefresh: {
-    fontSize: 11,
-    color: '#666',
-    marginTop: 2,
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: '800',
+  },
+  cardGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
   },
   card: {
-    backgroundColor: '#2d2d2d',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 16,
+    flexGrow: 1,
+    minWidth: 260,
+    backgroundColor: '#0f172a',
+    borderColor: '#25324a',
+    borderWidth: 1,
+    padding: 14,
+    borderRadius: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 22,
     elevation: 1,
   },
   cardLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#b0b0b0',
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#38bdf8',
     marginBottom: 8,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
   },
   cardValueLarge: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#818cf8',
+    fontSize: 30,
+    fontWeight: '900',
+    color: '#f8fafc',
+    fontFamily: 'monospace',
   },
   cardValue: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#f5f5f5',
+    fontWeight: '900',
+    color: '#f8fafc',
+    fontFamily: 'monospace',
     marginBottom: 4,
   },
   cardSubtext: {
     fontSize: 12,
-    color: '#808080',
+    color: '#64748b',
+    fontFamily: 'monospace',
   },
   epochInfo: {
     marginTop: 8,
@@ -347,24 +404,25 @@ const styles = StyleSheet.create({
   },
   epochText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#f5f5f5',
+    fontWeight: '900',
+    color: '#f8fafc',
   },
   epochPercentage: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#818cf8',
+    fontWeight: '900',
+    color: '#a78bfa',
+    fontFamily: 'monospace',
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#1e293b',
     borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 16,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#6366f1',
+    backgroundColor: '#8b5cf6',
     borderRadius: 4,
   },
   epochDetails: {
@@ -376,18 +434,21 @@ const styles = StyleSheet.create({
   },
   epochDetailLabel: {
     fontSize: 12,
-    color: '#808080',
+    color: '#64748b',
     marginBottom: 4,
+    fontWeight: '800',
   },
   epochDetailValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#f5f5f5',
+    fontWeight: '900',
+    color: '#f8fafc',
+    fontFamily: 'monospace',
   },
   chartSubtext: {
     fontSize: 12,
-    color: '#808080',
+    color: '#64748b',
     marginBottom: 16,
+    fontWeight: '800',
   },
   chart: {
     height: 150,
@@ -408,6 +469,9 @@ const styles = StyleSheet.create({
     height: 120,
     justifyContent: 'flex-end',
     alignItems: 'center',
+    backgroundColor: '#0b1220',
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   bar: {
     width: '80%',
@@ -417,28 +481,34 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     fontSize: 9,
-    color: '#b0b0b0',
+    color: '#94a3b8',
     marginTop: 4,
     textAlign: 'center',
+    fontFamily: 'monospace',
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    flexWrap: 'wrap',
+    gap: 10,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: '#25324a',
   },
   stat: {
     alignItems: 'center',
+    minWidth: 90,
   },
   statLabel: {
     fontSize: 12,
-    color: '#808080',
+    color: '#64748b',
     marginBottom: 4,
+    fontWeight: '800',
   },
   statValue: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#818cf8',
+    fontWeight: '900',
+    color: '#a78bfa',
+    fontFamily: 'monospace',
   },
 });

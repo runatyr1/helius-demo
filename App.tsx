@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Modal, Animated, Linking } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Modal, Animated, Linking, useWindowDimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Drawer } from 'react-native-drawer-layout';
 import LiveBalanceScreen from './src/screens/LiveBalanceScreen';
@@ -9,6 +9,7 @@ import NetworkHealthScreen from './src/screens/NetworkHealthScreen';
 import EngChallengeScreen from './src/screens/EngChallengeScreen';
 
 export default function App() {
+  const { width: screenWidth } = useWindowDimensions();
   const [open, setOpen] = useState(false);
   const [selectedScreen, setSelectedScreen] = useState('EngChallenge');
   const [showInfoTooltip, setShowInfoTooltip] = useState(false);
@@ -156,6 +157,8 @@ export default function App() {
     }
   };
 
+  const headerHorizontalPadding = screenWidth > 500 ? screenWidth * 0.1 : 14;
+
   return (
     <Drawer
       open={open}
@@ -166,7 +169,15 @@ export default function App() {
       drawerStyle={styles.drawer}
     >
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+        <View
+          style={[
+            styles.header,
+            {
+              paddingLeft: headerHorizontalPadding,
+              paddingRight: headerHorizontalPadding,
+            },
+          ]}
+        >
           <TouchableOpacity onPress={() => setOpen(!open)} style={styles.menuButton}>
             <Text style={styles.menuIcon}>☰</Text>
           </TouchableOpacity>
@@ -276,29 +287,32 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#070812',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2d2d2d',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: '#070812',
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#404040',
+    borderBottomColor: '#25324a',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.24,
+    shadowRadius: 22,
     elevation: 3,
   },
   menuButton: {
-    padding: 8,
-    marginRight: 8,
+    paddingVertical: 6,
+    paddingRight: 10,
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   menuIcon: {
-    fontSize: 24,
-    color: '#e0e0e0',
+    fontSize: 20,
+    color: '#f8fafc',
+    lineHeight: 22,
   },
   headerTitleContainer: {
     flexDirection: 'row',
@@ -307,20 +321,23 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#f5f5f5',
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#f8fafc',
+    letterSpacing: -0.2,
   },
   infoIconButton: {
     marginLeft: 8,
     padding: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   infoIcon: {
-    fontSize: 22,
-    color: '#00FFFF',
-    textShadowColor: '#00FFFF',
+    fontSize: 18,
+    color: '#38bdf8',
+    textShadowColor: '#38bdf8',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    textShadowRadius: 6,
   },
   modalOverlay: {
     flex: 1,
@@ -330,13 +347,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#2d2d2d',
-    borderRadius: 12,
+    backgroundColor: '#0f172a',
+    borderRadius: 22,
     padding: 24,
     width: '100%',
     maxWidth: 400,
     borderWidth: 1,
-    borderColor: '#404040',
+    borderColor: '#25324a',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -345,13 +362,13 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#f5f5f5',
+    fontWeight: '900',
+    color: '#f8fafc',
     marginBottom: 12,
   },
   modalText: {
     fontSize: 14,
-    color: '#e0e0e0',
+    color: '#cbd5e1',
     lineHeight: 22,
     marginBottom: 20,
   },
@@ -360,76 +377,85 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   modalCloseButton: {
-    backgroundColor: '#6366f1',
+    backgroundColor: '#1e293b',
+    borderColor: '#334155',
+    borderWidth: 1,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 14,
     alignItems: 'center',
     flex: 1,
   },
   modalDocsButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#064e3b',
+    borderColor: '#10b981',
   },
   modalCloseText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '800',
   },
   content: {
     flex: 1,
   },
   drawer: {
-    backgroundColor: '#2d2d2d',
+    backgroundColor: '#070812',
     width: 280,
   },
   drawerContainer: {
     flex: 1,
   },
   drawerHeader: {
-    backgroundColor: '#4f46e5',
-    padding: 24,
-    paddingTop: 40,
+    backgroundColor: '#0f172a',
+    borderBottomColor: '#25324a',
+    borderBottomWidth: 1,
+    padding: 20,
+    paddingTop: 36,
   },
   drawerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#f8fafc',
     marginBottom: 4,
   },
   drawerSubtitle: {
     fontSize: 14,
-    color: '#c7d2fe',
+    color: '#94a3b8',
   },
   drawerMenu: {
     flex: 1,
-    paddingTop: 16,
+    padding: 12,
+    gap: 8,
   },
   menuItem: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: 'transparent',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#263244',
+    backgroundColor: '#111827',
   },
   menuItemActive: {
-    backgroundColor: '#3d3d3d',
-    borderLeftColor: '#818cf8',
+    backgroundColor: '#181f35',
+    borderColor: '#6d5dfc',
   },
   menuItemText: {
-    fontSize: 16,
-    color: '#b0b0b0',
+    fontSize: 14,
+    color: '#cbd5e1',
+    fontWeight: '700',
   },
   menuItemTextActive: {
-    color: '#a5b4fc',
-    fontWeight: '600',
+    color: '#ddd6fe',
+    fontWeight: '900',
   },
   drawerFooter: {
     padding: 24,
     borderTopWidth: 1,
-    borderTopColor: '#404040',
+    borderTopColor: '#25324a',
   },
   footerText: {
     fontSize: 12,
-    color: '#808080',
+    color: '#64748b',
     textAlign: 'center',
   },
 });
